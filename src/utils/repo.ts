@@ -40,17 +40,26 @@ export const getNpmRunner = () => {
   return 'yarn';
 }
 
-const NPM_RESERVED_COMMANDS = ['access', 'adduser', 'audit', 'bin', 'bugs', 'c', 'cache', 'ci', 'cit', 'clean - install', 'clean - install - test', 'completion', 'config', 'create', 'ddp', 'dedupe', 'deprecate', 'dist - tag', 'docs', 'doctor', 'edit', 'explore', 'get', 'help', 'help - search', 'hook', 'i', 'init', 'install', 'install - ci - test', 'install - test', 'it', 'link', 'list', 'ln', 'login', 'logout', 'ls', 'org', 'outdated', 'owner', 'pack', 'ping', 'prefix', 'profile', 'prune', 'publish', 'rb', 'rebuild', 'repo', 'restart', 'root', 'run', 'run - script', 's', 'se', 'search', 'set', 'shrinkwrap', 'star', 'stars', 'start', 'stop', 't', 'team', 'test', 'token', 'tst', 'un', 'uninstall', 'unpublish', 'unstar', 'up', 'update', 'v', 'version', 'view', 'whoami'];
+const NPM_RESERVED_COMMANDS = ['access', 'adduser', 'audit', 'bin', 'bugs', 'c', 'cache', 'ci', 'cit', 'clean-install', 'clean-install-test', 'completion', 'config', 'create', 'ddp', 'dedupe', 'deprecate', 'dist-tag', 'docs', 'doctor', 'edit', 'explore', 'get', 'help', 'help-search', 'hook', 'i', 'init', 'install', 'install-ci-test', 'install-test', 'it', 'link', 'list', 'ln', 'login', 'logout', 'ls', 'org', 'outdated', 'owner', 'pack', 'ping', 'prefix', 'profile', 'prune', 'publish', 'rb', 'rebuild', 'repo', 'restart', 'root', 'run', 'run-script', 's', 'se', 'search', 'set', 'shrinkwrap', 'star', 'stars', 'start', 'stop', 't', 'team', 'test', 'token', 'tst', 'un', 'uninstall', 'unpublish', 'unstar', 'up', 'update', 'v', 'version', 'view', 'whoami'];
 
+const NPM_COMMAND_MAPPER = {
+  'install': 'ci',
+};
+
+const YARN_COMMAND_MAPPER = {
+  'install': 'install --frozen-lockfile',
+}
 export const getNpmRunnerCommand = (command: string) => {
   const commandParts = command.split(' ');
   const npmCommand = commandParts[0];
   const npmRunner = getNpmRunner();
   if (npmRunner === 'yarn') {
-    return `${npmRunner} ${command}`;
+    const finalCommand = YARN_COMMAND_MAPPER[command] || command;
+    return `${npmRunner} ${finalCommand}`;
   }
   if (NPM_RESERVED_COMMANDS.includes(npmCommand)) {
-    return `${npmRunner} ${command}`;
+    const finalCommand = NPM_COMMAND_MAPPER[command] || command;
+    return `${npmRunner} ${finalCommand}`;
   }
   return `${npmRunner} run ${command}`;
 };

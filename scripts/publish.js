@@ -18,12 +18,15 @@ const publish = async () => {
   const actionName = process.argv[2];
   const currentBranch = execSync('git rev-parse --abbrev-ref HEAD').toString().trim();
   const checkoutActionBranch = execSync(`git checkout -B ${actionName}`);
+  console.debug('Building...');
   const build = await runner(`yarn build ${actionName}`);
   execSync('chmod +x dist/*');
   execSync(`cp src/actions/${actionName}/action.yml action.yml`);
   execSync('git add -f dist action.yml');
   execSync(`git commit -m "Published ${actionName}"`);
+  console.debug('Pushing to git remote...');
   execSync(`git push origin ${actionName}`);
+  console.info(k.green('Published'));
 };
 
 publish();
