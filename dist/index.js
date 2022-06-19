@@ -7482,7 +7482,7 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
     const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
     console.log(message);
     if (message) {
-        yield (0, github_1.addOrRenewCommentOnPR)(message, '`jestCoverageDiff`');
+        yield (0, github_1.addNewSingletonComment)(message, '`jestCoverageDiff`');
     }
 });
 const main = () => {
@@ -7791,7 +7791,7 @@ exports.git = gitFactory();
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.addOrRenewCommentOnPR = exports.addCommentOnPR = exports.createMarkdownTable = exports.getFileStatusIcon = void 0;
+exports.addNewSingletonComment = exports.addOrRenewCommentOnPR = exports.deleteComment = exports.addCommentOnPR = exports.createMarkdownTable = exports.getFileStatusIcon = void 0;
 const tslib_1 = __webpack_require__(655);
 const core = tslib_1.__importStar(__webpack_require__(2225));
 const github = tslib_1.__importStar(__webpack_require__(8142));
@@ -7844,6 +7844,15 @@ const addCommentOnPR = (message, identifier) => {
     return newComment;
 };
 exports.addCommentOnPR = addCommentOnPR;
+const deleteComment = (commentId) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+    const token = core.getInput('token');
+    const octokit = github.getOctokit(token);
+    const context = github.context;
+    const deleteComment = yield octokit.rest.issues.deleteComment(Object.assign(Object.assign({}, context.repo), { comment_id: commentId }));
+    console.info(`Deleted comment: ${commentId}`);
+    return deleteComment;
+});
+exports.deleteComment = deleteComment;
 const addOrRenewCommentOnPR = (message, identifier) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     const token = core.getInput('token');
     const octokit = github.getOctokit(token);
@@ -7860,6 +7869,19 @@ const addOrRenewCommentOnPR = (message, identifier) => tslib_1.__awaiter(void 0,
     }
 });
 exports.addOrRenewCommentOnPR = addOrRenewCommentOnPR;
+const addNewSingletonComment = (message, identifier) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+    const token = core.getInput('token');
+    const octokit = github.getOctokit(token);
+    const context = github.context;
+    const prId = context.payload.pull_request.number;
+    const comments = yield octokit.rest.issues.listComments(Object.assign(Object.assign({}, context.repo), { issue_number: prId }));
+    const comment = comments.data.find((comment) => comment.body.includes(identifier));
+    if (comment) {
+        yield (0, exports.deleteComment)(comment.id);
+    }
+    return (0, exports.addCommentOnPR)(message, identifier);
+});
+exports.addNewSingletonComment = addNewSingletonComment;
 
 
 /***/ }),
