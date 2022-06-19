@@ -1,3 +1,6 @@
+import core from '@actions/core';
+import github from '@actions/github';
+
 export const getFileStatusIcon = (status = '') => {
   if (status === 'A') {
     return '<b title="Added">🟩</b>';
@@ -39,3 +42,38 @@ export const createMarkdownTable = <T extends Record<string, string>>(headers: T
 
   return table;
 };
+
+export const addCommentOnPR = (message: string, identifier: string) => {
+  const token = core.getInput('token');
+  const octokit = github.getOctokit(token);
+  const context = github.context;
+  const prId = context.payload.pull_request.number;
+  const newComment = octokit.rest.issues.createComment({
+    ...context.repo,
+    issue_number: prId,
+    body: message + '\n' + `_${identifier}_`,
+  });
+  return newComment;
+}
+
+export const addOrRenewCommentOnPR = async (message: string, identifier: string) => {
+  const token = core.getInput('token');
+  const octokit = github.getOctokit(token);
+  const context = github.context;
+  const prId = context.payload.pull_request.number;
+  const comments = await octokit.rest.issues.listComments({
+    ...context.repo,
+    issue_number: prId,
+  });
+  const comment = comments.data.find((comment) => comment.body.includes(identifier));
+  if (comment) {
+    const newComment = await octokit.rest.issues.updateComment({
+      ...context.repo,
+      comment_id: comment.id,
+      body: message + '\n' + `_${identifier}_`,
+    });
+    return newComment;
+  } else {
+    return addCommentOnPR(message, identifier);
+  }
+}

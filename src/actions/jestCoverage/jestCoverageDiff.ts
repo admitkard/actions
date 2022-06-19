@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // tslint:disable: no-console
 import { runner, truncateString } from '../../utils';
-import { createMarkdownTable, getFileStatusIcon } from '../../utils/github';
+import { addOrRenewCommentOnPR, createMarkdownTable, getFileStatusIcon } from '../../utils/github';
 import { git, GitChangedFile } from '../../utils/git';
 import { BASE_BRANCH, FILE_NAME_LIMIT, MIN_COVERAGE } from './jestConstants';
 import { getJestCoverage, isFileDisallowed, JestCoverageDiff, JestCoverageSummary, saveCoverageDiff } from './jestUtils';
@@ -163,6 +163,9 @@ const getCoverage = async () => {
   saveCoverageDiff(jestCoverageDiff);
   const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
   console.log(message);
+  if (message) {
+    await addOrRenewCommentOnPR(message, '`jestCoverageDiff`');
+  }
 };
 
 export const main = () => {
