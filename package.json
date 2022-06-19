@@ -1,10 +1,12 @@
 {
-  "name": "akd.github",
+  "name": "@admitkard/actions",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "src/index.ts",
   "scripts": {
-    "coverage": "./scripts/jestCoverageDiff.js"
+    "coverage": "./scripts/jestCoverageDiff.js",
+    "build": "webpack --config webpack.config.js --env",
+    "dopublish": "node --trace-warnings ./scripts/publish.js"
   },
   "repository": {
     "type": "git",
@@ -15,5 +17,19 @@
   "bugs": {
     "url": "https://github.com/admitkard/.github/issues"
   },
-  "homepage": "https://github.com/admitkard/.github#readme"
+  "homepage": "https://github.com/admitkard/.github#readme",
+  "dependencies": {
+    "@types/node": "^18.0.0",
+    "@vercel/ncc": "^0.34.0",
+    "typescript": "^4.7.4"
+  },
+  "devDependencies": {
+    "kleur": "^4.1.4",
+    "ts-loader": "^9.3.0",
+    "ts-node": "^10.8.1",
+    "tslib": "^2.4.0",
+    "webpack": "^5.73.0",
+    "webpack-cli": "^4.10.0",
+    "webpack-node-externals": "^3.0.0"
+  }
 }

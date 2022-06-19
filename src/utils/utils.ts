@@ -1,6 +1,6 @@
 // tslint:disable: no-console
-const { spawn, SpawnOptions } = require ('child_process');
-const path = require('path');
+import { spawn, SpawnOptions } from 'child_process';
+import path from 'path';
 
 const CONSOLE_CLEAR_TIMEOUT = 15; // seconds
 /**
@@ -46,17 +46,25 @@ const setClear = () => {
   }
 }
 
+interface RunnerMeta {
+  info: Record<string, any>;
+  silent: boolean;
+  package: string;
+  nodeBin: boolean;
+  options: SpawnOptions;
+}
+
 const ignoreWarnings = [
   /.*PackFileCacheStrategy.*Skipped not serializable cache item 'CopyWebpackPlugin.*No serializer registered for RawSource/,
   /.*('bufferutil'|'utf-8-validate'|the request of a dependency is an expression).*/,
 ]
-const runner = (command, meta = {}) => {
+const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
   return new Promise((resolve, reject) => {
     const [_command, ...args] = command.split(' ');
     let output = '';
 
     const packageName = meta.package;
-    const info = {
+    const info: Record<string, any> = {
       ...(meta.info || {}),
       package: packageName,
     };
@@ -72,13 +80,14 @@ const runner = (command, meta = {}) => {
     if (meta.nodeBin) {
       raw = nodeBin(_command);
     }
+
+    console.debug({ args });
     
     const cmd = Array.isArray(args) ? spawn(raw, args, options) : spawn(raw, options);
 
     cmd.stdout.on('data', (data) => {
-      if (meta.silent) {
+      if (meta.silent === false) {
         output += data;
-      } else {
         process.stdout.write(`${printCommand(_command, info)}: ${data}`);
         if (info.onStdout) {
           info.onStdout(data);

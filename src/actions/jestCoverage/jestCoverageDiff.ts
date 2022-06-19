@@ -3,15 +3,9 @@
 const path = require('path');
 const fs = require('fs');
 const { execSync } = require('child_process');
-const { runner } = require('./utils');
+const { runner } = require('../../utils/utils');
 const __pwd = process.cwd();
 console.log({ __pwd });
-console.log('ls', execSync('ls -la').toString());
-console.log('ls..', execSync('ls -la ..').toString());
-console.log('ls..', execSync('git branch').toString());
-const jestConfig = require(path.join(__pwd, 'jest.config.js'));
-const packageJson = require(path.join(__pwd, 'package.json'));
-
 
 const FILE_NAME_LIMIT = 40;
 const MIN_COVERAGE = {
@@ -20,7 +14,6 @@ const MIN_COVERAGE = {
   functions: 25,
   branches: 25,
 };
-const COVERAGE_DIR = jestConfig.coverageDirectory;
 const COVERAGE_SUMMARY = 'coverage-summary.json';
 const COVERAGE_DIFF = 'coverage-diff.json';
 const BASE_BRANCH = 'dev';
@@ -36,8 +29,30 @@ const DISALLOWED_FILES = [
   '\\..*',
 ];
 
+let COVERAGE_DIR = '';
+const getCoverageDir = () => {
+  if (!COVERAGE_DIR) {
+    const jestConfig = require(path.join(__pwd, 'jest.config.js'));
+    COVERAGE_DIR = jestConfig.coverageDirectory;
+  }
+  return COVERAGE_DIR;
+}
+
 let passed = true;
-const filesStatus = {};
+interface FileDetails {
+  package?: string;
+  displayName?: string;
+  status?: string;
+}
+
+interface FileStatus extends FileDetails {
+  coverage?: {
+    new?: {},
+    old?: {},
+  },
+};
+
+const filesStatus: Record<string, FileStatus> = {};
 const changedFiles = [];
 
 const disallowedFilesRegex = new RegExp(`^(${DISALLOWED_FILES.join('|')})$`, 'im')
@@ -55,9 +70,11 @@ const getTruncatedString = (str) => {
 };
 
 const transformFilesMeta = (fileName, status) => {
-  const fileDetails = {
+  const fileDetails: FileDetails = {
     status,
   };
+
+  const packageJson = require(path.join(__pwd, 'package.json'));
 
   const isMonorepo = !!packageJson.workspaces;
   if (isMonorepo) {
@@ -97,16 +114,19 @@ const clearJestCache = async () => {
   await runner('rm -rf coverage');
 }
 
+interface FileCoverage {
+
+}
 const getJestCoverage = async () => {
   await clearJestCache();
   const jestCoverageCommand = runner('yarn test --coverage');
   return jestCoverageCommand.then(() => {
     runner('ls -la');
     runner('ls -la coverage');
-    const COVERAGE_FILE_PATH = path.join(__pwd, COVERAGE_DIR, COVERAGE_SUMMARY);
+    const COVERAGE_FILE_PATH = path.join(__pwd, getCoverageDir(), COVERAGE_SUMMARY);
     delete require.cache[require.resolve(COVERAGE_FILE_PATH)]
     const coverage = require(COVERAGE_FILE_PATH);
-    const transformedCoverage = {};
+    const transformedCoverage: Record<string, FileCoverage> = {};
 
     transformedCoverage.total = coverage.total;
     Object.keys(coverage).forEach((fullFileName) => {
@@ -152,7 +172,7 @@ const getBaseBranchJestCoverage = async () => {
 }
 
 const printCoverageDiffToFile = () => {
-  fs.writeFileSync(path.join(__pwd, COVERAGE_DIR, COVERAGE_DIFF), JSON.stringify(filesStatus, null, 2));
+  fs.writeFileSync(path.join(__pwd, getCoverageDir(), COVERAGE_DIFF), JSON.stringify(filesStatus, null, 2));
 };
 
 const convertRowDataToRow = (columns) => {
@@ -243,4 +263,6 @@ const getCoverage = async () => {
   console.log(message);
 };
 
-getCoverage();
+export const main = () => {
+  getCoverage();
+}

@@ -4,4 +4,4 @@ author: 'Piyush'
 
 runs:
   using: 'node16'
-  main: 'scripts/jestCoverageDiff.js'
+  main: 'dist/index.js'
