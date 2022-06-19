@@ -20,6 +20,7 @@ const publish = async () => {
   const checkoutActionBranch = execSync(`git checkout -B ${actionName}`);
   const build = await runner(`yarn build ${actionName}`);
   execSync('chmod +x dist/*');
+  execSync(`cp src/actions/${actionName}/action.yml action.yml`);
   execSync('git add -f dist action.yml');
   execSync(`git commit -m "Published ${actionName}"`);
   execSync(`git push origin ${actionName}`);

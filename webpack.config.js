@@ -1,6 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const CopyPlugin = require("copy-webpack-plugin");
 
 const getFoldersInDir = (directory) => {
   const folders = [];
@@ -45,13 +44,6 @@ const getWebpackConfig = (env, argv) => {
         exclude: /node_modules/,
       }],
     },
-    plugins: [
-      new CopyPlugin({
-        patterns: [
-          { from: path.join(actionsDir, 'action.yml'), to: path.join(__dirname) },
-        ],
-      }),
-    ],
     resolve: {
       extensions: ['.tsx', '.ts', '.js'],
     },
