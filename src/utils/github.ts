@@ -32,7 +32,10 @@ export const createMarkdownTable = <T extends Record<string, string>>(headers: T
   };
 
   const toString = () => {
-    return rows.map(convertRowDataToRow).join('\n');
+    const [header, ...restRows] = rows;
+    const headerLabels = header.map((headerKey: string) => headers[headerKey]);
+    const newRows = [headerLabels, ...restRows];
+    return newRows.map(convertRowDataToRow).join('\n');
   }
 
   const table = {
