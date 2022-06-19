@@ -196,7 +196,8 @@ const fetchRequiredBranches = () => tslib_1.__awaiter(void 0, void 0, void 0, fu
     // echo ${GITHUB_HEAD_REF} ${GITHUB_BASE_REF} ${{ github.event.pull_request.head.sha }}
     yield (0, utils_1.runner)(`git fetch --no-tags --depth=1 origin ${git_1.git.base}`);
     yield (0, utils_1.runner)(`git checkout -b ${git_1.git.base}`);
-    yield (0, utils_1.runner)(`git checkout ${git_1.git.head}`);
+    yield (0, utils_1.runner)(`git fetch --no-tags --depth=1 origin ${git_1.git.head}`);
+    yield (0, utils_1.runner)(`git checkout -b ${git_1.git.head}`);
 });
 const getChangedFiles = () => {
     const filteredChangedFiles = git_1.git.changedFiles.filter((changedFile) => !(0, jestUtils_1.isFileDisallowed)(changedFile.fileName));
