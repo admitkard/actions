@@ -7823,7 +7823,10 @@ const createMarkdownTable = (headers) => {
         rows.push(rowData);
     };
     const toString = () => {
-        return rows.map(convertRowDataToRow).join('\n');
+        const [header, ...restRows] = rows;
+        const headerLabels = header.map((headerKey) => headers[headerKey]);
+        const newRows = [headerLabels, ...restRows];
+        return newRows.map(convertRowDataToRow).join('\n');
     };
     const table = {
         addRow,
