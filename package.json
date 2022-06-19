@@ -7,7 +7,7 @@
     "_build": "webpack --config webpack.config.js --env",
     "coverage": "./scripts/jestCoverageDiff.js",
     "build": "node ./scripts/buildAction.js",
-    "dopublish": "node --trace-warnings ./scripts/publish.js"
+    "dopublish": "node ./scripts/publish.js"
   },
   "repository": {
     "type": "git",
