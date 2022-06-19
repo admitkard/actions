@@ -44,9 +44,10 @@ const fetchRequiredBranches = async () => {
   git.head = process.env.GITHUB_HEAD_REF || git.current;
   // const requiredBranches = [git.base, git.head];
   // echo ${GITHUB_HEAD_REF} ${GITHUB_BASE_REF} ${{ github.event.pull_request.head.sha }}
-  await runner(`git fetch --no-tags --depth=1 origin ${git.base}`);
+  await runner(`git fetch --all`);
+  await runner(`git fetch --no-tags --depth=0 origin ${git.base}`);
   await runner(`git checkout -b ${git.base}`);
-  await runner(`git fetch --no-tags --depth=1 origin ${git.head}`);
+  await runner(`git fetch --no-tags --depth=0 origin ${git.head}`);
   await runner(`git checkout -b ${git.head}`);
 }
 
