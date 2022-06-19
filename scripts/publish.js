@@ -4,7 +4,7 @@ const { runner } = require('./utils');
 const k = require('kleur');
 
 const checkGitDirty = () => {
-  const gitDirty = execSync('git diff --stat');
+  const gitDirty = execSync('git diff --stat').toString().trim();
   if (gitDirty) {
     const errorMessage = 'Git tree is dirty, please commit changes first';
     console.log(k.red(errorMessage));
