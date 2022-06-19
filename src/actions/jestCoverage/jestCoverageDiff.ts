@@ -39,9 +39,17 @@ const getFileDisplayName = (fileName: string) => {
   return fileDetails;
 }
 
-const getChangedFiles = () => {
+const fetchRequiredBranches = async () => {
   git.base = BASE_BRANCH;
   git.head = git.current;
+  // const requiredBranches = [git.base, git.head];
+  // echo ${GITHUB_HEAD_REF} ${GITHUB_BASE_REF} ${{ github.event.pull_request.head.sha }}
+  await runner(`git fetch --no-tags --depth=1 origin ${git.base}`);
+  await runner(`git checkout -b ${git.base}`);
+  await runner(`git checkout ${git.head}`);
+}
+
+const getChangedFiles = () => {
   const filteredChangedFiles = git.changedFiles.filter((changedFile) => !isFileDisallowed(changedFile.fileName));
   console.debug({changedFiles: git.changedFiles, filteredChangedFiles});
   return filteredChangedFiles;
@@ -144,6 +152,7 @@ const coverageMessage = (transformedGitFiles: FileDetails[], jestCoverageDiff: R
 }
 
 const getCoverage = async () => {
+  await fetchRequiredBranches();
   const gitChangedFiles = getChangedFiles();
   const transformedGitFiles = transformGitFiles(gitChangedFiles);
   const currentJestCoverage = await getCurrentBranchJestCoverage(transformedGitFiles);
