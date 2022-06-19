@@ -1,0 +1,19 @@
+{
+  "name": "akd.github",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "coverage": "./scripts/jestCoverageDiff.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/admitkard/.github.git"
+  },
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/admitkard/.github/issues"
+  },
+  "homepage": "https://github.com/admitkard/.github#readme"
+}
