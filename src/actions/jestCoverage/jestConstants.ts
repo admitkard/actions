@@ -5,7 +5,7 @@ export const MIN_COVERAGE = {
   functions: 25,
   branches: 25,
 };
-export const BASE_BRANCH = 'master';
+export const BASE_BRANCH = process.env.GITHUB_BASE_REF || 'dev';
 
 export const COVERAGE_SUMMARY = 'coverage-summary.json';
 export const COVERAGE_DIFF = 'coverage-diff.json';

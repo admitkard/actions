@@ -41,7 +41,7 @@ const getFileDisplayName = (fileName: string) => {
 
 const fetchRequiredBranches = async () => {
   git.base = BASE_BRANCH;
-  git.head = git.current;
+  git.head = process.env.GITHUB_HEAD_REF || git.current;
   // const requiredBranches = [git.base, git.head];
   // echo ${GITHUB_HEAD_REF} ${GITHUB_BASE_REF} ${{ github.event.pull_request.head.sha }}
   await runner(`git fetch --no-tags --depth=1 origin ${git.base}`);
