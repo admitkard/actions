@@ -1,7 +1,9 @@
+import { systemCheck } from '../../utils/systemCheck';
 import { main } from './jestCoverageDiff';
 
-console.log('process.env.CI', process.env.CI);
 if (process.env.CI === 'true') {
-  console.log('executing main');
+  systemCheck.run();
   main();
+} else {
+  console.error('This script is meant to be run on CI only. Use CI=true to run locally.');
 }

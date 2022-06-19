@@ -1,253 +1,142 @@
 #!/usr/bin/env node
 // tslint:disable: no-console
-const path = require('path');
-const fs = require('fs');
-const { execSync } = require('child_process');
-const { runner } = require('../../utils/utils');
-const __pwd = process.cwd();
-console.log({ __pwd });
-
-const FILE_NAME_LIMIT = 40;
-const MIN_COVERAGE = {
-  statements: 50,
-  lines: 50,
-  functions: 25,
-  branches: 25,
-};
-const COVERAGE_SUMMARY = 'coverage-summary.json';
-const COVERAGE_DIFF = 'coverage-diff.json';
-const BASE_BRANCH = 'dev';
-const CURRENT_BRANCH = execSync('git rev-parse --abbrev-ref HEAD').toString().split('\n')[0];
-const DISALLOWED_FILES = [
-  '.*\\.js',
-  '.*\\.spec\\.tsx?',
-  '.*\\.test\\.tsx?',
-  '.*\\/index\\.tsx?',
-  '.*\\/__mocks__\\/.*',
-  '.*\\.json',
-  '.*\\.lock',
-  '\\..*',
-];
-
-let COVERAGE_DIR = '';
-const getCoverageDir = () => {
-  if (!COVERAGE_DIR) {
-    const jestConfig = require(path.join(__pwd, 'jest.config.js'));
-    COVERAGE_DIR = jestConfig.coverageDirectory;
-  }
-  return COVERAGE_DIR;
-}
+import { runner, truncateString } from '../../utils';
+import { createMarkdownTable, getFileStatusIcon } from '../../utils/github';
+import { git, GitChangedFile } from '../../utils/git';
+import { BASE_BRANCH, FILE_NAME_LIMIT, MIN_COVERAGE } from './jestConstants';
+import { getJestCoverage, isFileDisallowed, JestCoverageDiff, JestCoverageSummary, saveCoverageDiff } from './jestUtils';
+import { getNpmRunnerCommand, isMonorepo } from '../../utils/repo';
+import { convertCoverageToReportCell } from './jestReportUtils'; 4
+import k from 'kleur';
 
 let passed = true;
 interface FileDetails {
-  package?: string;
-  displayName?: string;
   status?: string;
+  fileName?: string;
+  displayName?: string;
+  package?: string;
 }
 
-interface FileStatus extends FileDetails {
-  coverage?: {
-    new?: {},
-    old?: {},
-  },
-};
 
-const filesStatus: Record<string, FileStatus> = {};
-const changedFiles = [];
-
-const disallowedFilesRegex = new RegExp(`^(${DISALLOWED_FILES.join('|')})$`, 'im')
-const isFileDisallowed = (fileName) => {
-  return disallowedFilesRegex.test(fileName);
-}
-
-const getTruncatedString = (str) => {
-  if (str.length <= FILE_NAME_LIMIT) {
-    return str;
-  } else {
-    const truncatedString = str.slice(str.length - FILE_NAME_LIMIT, str.length);
-    return `...${truncatedString}`;
-  }
-};
-
-const transformFilesMeta = (fileName, status) => {
-  const fileDetails: FileDetails = {
-    status,
-  };
-
-  const packageJson = require(path.join(__pwd, 'package.json'));
-
-  const isMonorepo = !!packageJson.workspaces;
-  if (isMonorepo) {
+const getFileDisplayName = (fileName: string) => {
+  const isRepoMonorepo = isMonorepo();
+  const fileDetails: FileDetails = {};
+  if (isRepoMonorepo) {
     const packageNameRegex = /packages\/(?<package>[a-zA-Z0-9]+)\/.*/;
-    const pacakgeNameMatch = packageNameRegex.exec(fileName);
-    const packageName = pacakgeNameMatch.groups.package;
-    fileDetails.package = packageName;
-
-    const fileNameWithoutPackage = fileName.replace(`packages/${packageName}/`, '');
-    fileDetails.displayName = getTruncatedString(fileNameWithoutPackage);
+    const packageNameMatch = packageNameRegex.exec(fileName);
+    if (packageNameMatch && packageNameMatch.groups) {
+      const packageName = packageNameMatch.groups.package;
+      fileDetails.package = packageName;
+      
+      const fileNameWithoutPackage = fileName.replace(`packages/${packageName}/`, '');
+      fileDetails.displayName = truncateString(fileNameWithoutPackage, FILE_NAME_LIMIT);
+    } else {
+      fileDetails.displayName = truncateString(fileName, FILE_NAME_LIMIT);
+    }
   } else {
-    fileDetails.displayName = getTruncatedString(fileName);
+    fileDetails.displayName = truncateString(fileName, FILE_NAME_LIMIT);
   }
-  
-  filesStatus[fileName] = fileDetails;
+  return fileDetails;
 }
 
 const getChangedFiles = () => {
-  const changedFilesGit = execSync('git diff dev --name-status').toString().split('\n');
-  const gitStatusRegex = /(?<status>\w+)\s+(?:.*\s+)?(?<fileName>.*)/m;
-  changedFilesGit.forEach((line) => {
-    const match = gitStatusRegex.exec(line);
-    if (match) {
-      const { groups: { status, fileName } } = match;
-      if (isFileDisallowed(fileName)) {
-        return;
-      }
-      changedFiles.push(fileName);
-      transformFilesMeta(fileName, status);
+  git.base = BASE_BRANCH;
+  git.head = git.current;
+  const filteredChangedFiles = git.changedFiles.filter((changedFile) => !isFileDisallowed(changedFile.fileName));
+  console.debug({changedFiles: git.changedFiles, filteredChangedFiles});
+  return filteredChangedFiles;
+};
+
+const transformGitFiles = (changedFiles: GitChangedFile[]) => {
+  return changedFiles.map((changedFile) => ({
+    ...changedFile,
+    ...getFileDisplayName(changedFile.fileName),
+  } as FileDetails));
+};
+
+const getJestChangedFilesCoverage = async (changedFiles: FileDetails[]) => {
+  await runner(getNpmRunnerCommand('install'));
+
+  const fileCoverages: Record<string, JestCoverageSummary> = {};
+  const coverage = await getJestCoverage();
+
+  fileCoverages.total = coverage.total;
+  changedFiles.forEach((changedFile) => {
+    fileCoverages[changedFile.fileName] = coverage[changedFile.fileName];
+  });
+  console.debug({ fileCoverages, changedFiles });
+  return fileCoverages;
+};
+
+const getCurrentBranchJestCoverage = async (changedFiles: FileDetails[]) => {
+  console.debug(k.blue('Getting jest coverage of current branch...'));
+  const fileCoverages = await getJestChangedFilesCoverage(changedFiles);
+  console.debug(k.blue('Jest coverage done for current branch.'));
+  return fileCoverages;
+};
+
+const getBaseBranchJestCoverage = async (changedFiles: FileDetails[]) => {
+  console.debug(k.blue('Getting jest coverage of base branch...'));
+  git.checkout(BASE_BRANCH);
+  const fileCoverages = await getJestChangedFilesCoverage(changedFiles);
+  git.checkout(git.head);
+  console.debug(k.blue('Jest coverage done for base branch.'));
+  return fileCoverages;
+};
+
+const getMetricCoverageDiff = (currentCoverage: JestCoverageSummary, baseCoverage: JestCoverageSummary, metricName: string) => {
+  const metricDiff = {
+    total: { current: currentCoverage && currentCoverage[metricName].total, base: baseCoverage && baseCoverage[metricName].total },
+    covered: { current: currentCoverage && currentCoverage[metricName].covered, base: baseCoverage && baseCoverage[metricName].covered },
+    skipped: { current: currentCoverage && currentCoverage[metricName].skipped, base: baseCoverage && baseCoverage[metricName].skipped },
+    pct: { current: currentCoverage && currentCoverage[metricName].pct, base: baseCoverage && baseCoverage[metricName].pct },
+  };
+  return metricDiff;
+}
+
+const mergeJestCoverage = (currentJestCoverage: Record<string, JestCoverageSummary>, baseJestCoverage: Record<string, JestCoverageSummary>) => {
+  const fileCoverage: Record<string, JestCoverageDiff> = {}; 
+  console.log({ currentJestCoverage, baseJestCoverage });
+  Object.keys(currentJestCoverage).forEach((fileName) => {
+    const currentCoverage = currentJestCoverage[fileName];
+    const baseCoverage = baseJestCoverage[fileName];
+    fileCoverage[fileName] = {
+      lines: getMetricCoverageDiff(currentCoverage, baseCoverage, 'lines'),
+      branches: getMetricCoverageDiff(currentCoverage, baseCoverage, 'branches'),
+      functions: getMetricCoverageDiff(currentCoverage, baseCoverage, 'functions'),
+      statements: getMetricCoverageDiff(currentCoverage, baseCoverage, 'statements'),
     }
   });
-};
-
-const clearJestCache = async () => {
-  await runner('npm run test --clearCache');
-  await runner('rm -rf /tmp/jest*');
-  await runner('rm -rf coverage');
+  return fileCoverage;
 }
 
-interface FileCoverage {
 
-}
-const getJestCoverage = async () => {
-  await clearJestCache();
-  const jestCoverageCommand = runner('yarn test --coverage');
-  return jestCoverageCommand.then(() => {
-    runner('ls -la');
-    runner('ls -la coverage');
-    const COVERAGE_FILE_PATH = path.join(__pwd, getCoverageDir(), COVERAGE_SUMMARY);
-    delete require.cache[require.resolve(COVERAGE_FILE_PATH)]
-    const coverage = require(COVERAGE_FILE_PATH);
-    const transformedCoverage: Record<string, FileCoverage> = {};
-
-    transformedCoverage.total = coverage.total;
-    Object.keys(coverage).forEach((fullFileName) => {
-      if (fullFileName !== 'total') {
-        const relativeFileName = fullFileName.replace(`${__pwd}/`, '');
-        transformedCoverage[relativeFileName] = coverage[fullFileName];
-      }
-    });
-    return transformedCoverage;
+const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCoverageDiff: Record<string, JestCoverageDiff>) => {
+  const table = createMarkdownTable({
+    status: '',
+    file: 'File',
+    functions: 'Functions',
+    branches: 'Branches',
+    statements: 'Statements',
   });
-}
 
-const getCurrentBranchJestCoverage = async () => {
-  await runner(`yarn install`);
-  return getJestCoverage().then((coverage) => {
-    filesStatus.total = { coverage: {} };
-    filesStatus.total.coverage.new = coverage.total;
-    changedFiles.forEach((fileName) => {
-      filesStatus[fileName].coverage = {};
-      filesStatus[fileName].coverage.new = coverage[fileName];
+  transformedGitFiles.forEach((gitFile) => {
+    const coverageDiff = jestCoverageDiff[gitFile.fileName];
+    const fileDisplayName = (gitFile.package ? `${gitFile.package}/${gitFile.displayName}` : gitFile.displayName) || gitFile.fileName;
+    table.addRow({
+      status: getFileStatusIcon(gitFile.status),
+      file: fileDisplayName,
+      functions: convertCoverageToReportCell(coverageDiff.lines, MIN_COVERAGE.functions, gitFile.status),
+      branches: convertCoverageToReportCell(coverageDiff.branches, MIN_COVERAGE.branches, gitFile.status),
+      statements: convertCoverageToReportCell(coverageDiff.statements, MIN_COVERAGE.statements, gitFile.status),
     });
-  })
-}
-
-const getBaseBranchJestCoverage = async () => {
-  await runner(`git checkout ${BASE_BRANCH}`);
-  await runner(`yarn install`);
-  return getJestCoverage().then((coverage) => {
-    if (!filesStatus.total) {
-      filesStatus.total = { coverage: {} };
-    }
-    filesStatus.total.coverage.old = coverage.total;
-    changedFiles.forEach((fileName) => {
-      if (!filesStatus[fileName].coverage) {
-        filesStatus[fileName].coverage = {};
-      }
-      filesStatus[fileName].coverage.old = coverage[fileName];
-    });
-    console.log({ filesStatus });
-  }).then(() => {
-    runner(`git checkout ${CURRENT_BRANCH}`);
   });
-}
-
-const printCoverageDiffToFile = () => {
-  fs.writeFileSync(path.join(__pwd, getCoverageDir(), COVERAGE_DIFF), JSON.stringify(filesStatus, null, 2));
-};
-
-const convertRowDataToRow = (columns) => {
-  return `| ${columns.join(' | ')} |`;
-}
-const covertTableDataToCell = (old, current, dataKey, status) => {
-  const oldData = old ? old[dataKey] : null;
-  const currentData = current ? current[dataKey] : null;
-  let cell = '';
-  let indcatorAdded = false;
-  if (!indcatorAdded && status === 'A' && (!currentData || currentData.pct < MIN_COVERAGE[dataKey])) { // New file no coverage
-    cell += '<b title="No test coverage for new file">🚨 </b>';
-    passed = false;
-    indcatorAdded = true;
-  }
-  if (!indcatorAdded && oldData && currentData && currentData.pct < oldData.pct) { // Coverage reduced
-    cell += '<b title="Coverage is reduced">🔴 </b>';
-    passed = false;
-    indcatorAdded = true;
-  }
-  if (!indcatorAdded && oldData && currentData && currentData.pct >= oldData.pct && currentData.pct < MIN_COVERAGE[dataKey]) { // Coverage less than threshold
-    cell += `<b title="Coverage is less than threshold of ${MIN_COVERAGE[dataKey]}%">⚠️ </b>`;
-    indcatorAdded = true;
-  }
-  if (!indcatorAdded && oldData && currentData && currentData.pct >= oldData.pct) { // Coverage improved
-    cell += '🟢 ';
-    indcatorAdded = true;
-  }
-  cell += currentData ? `<b title="${currentData.pct} (${currentData.covered}/${currentData.total})">**${Math.floor(currentData.pct)}%**</b>` : 'NA';
-  if (status !== 'A') {
-    cell += '←'
-    cell += oldData ? `<i title="${oldData.pct} (${oldData.covered}/${oldData.total})">_${Math.floor(oldData.pct)}%_</i>` : 'NA';
-  }
-  return cell;
-};
-
-const getStatus = (status = '') => {
-  if (status === 'A') {
-    return '<b title="Added">🟩</b>';
-  }
-  if (status === 'M') {
-    return '<b title="Modified">🟨</b>';
-  }
-  if (status === 'D') {
-    return '<b title="Deleted">🟥</b>';
-  }
-  if (status.indexOf('R') === 0) {
-    return '<b title="Renamed">🟫</b>';
-  }
-  return status;
-}
-const convertDiffToMarkdownTable = () => {
-  const table = [];
-  const headers = ['', 'File', 'Functions', 'Branches', 'Statements'];
-  table.push(headers);
-  table.push(headers.map(() => `--------`));
-  Object.keys(filesStatus).forEach((fileName) => {
-    const fileData = filesStatus[fileName];
-    const fileDisplayName = (fileData.package ? `${fileData.package}/${fileData.displayName}` : fileData.displayName) || fileName;
-    const old = fileData.coverage.old;
-    const current = fileData.coverage.new;
-    table.push([
-      getStatus(fileData.status),
-      fileDisplayName,
-      covertTableDataToCell(old, current, 'functions', fileData.status),
-      covertTableDataToCell(old, current, 'branches', fileData.status),
-      covertTableDataToCell(old, current, 'statements', fileData.status),
-    ]);
-  });
-  const tableMd = table.map(convertRowDataToRow).join('\n');
+  const tableMd = table.toString();
   return tableMd;
 };
 
-const coverageMessage = () => {
-  const tableMd = convertDiffToMarkdownTable();
+const coverageMessage = (transformedGitFiles: FileDetails[], jestCoverageDiff: Record<string, JestCoverageDiff>) => {
+  const tableMd = convertDiffToMarkdownTable(transformedGitFiles, jestCoverageDiff);
   const additionalInfoBefore = [];
   additionalInfoBefore.push(`Status: ${passed ? '🟢 Well Done' : '🔴'}`);
   const additionalInfoAfter = [];
@@ -255,11 +144,13 @@ const coverageMessage = () => {
 }
 
 const getCoverage = async () => {
-  getChangedFiles();
-  await getCurrentBranchJestCoverage();
-  await getBaseBranchJestCoverage();
-  printCoverageDiffToFile();
-  const message = coverageMessage();
+  const gitChangedFiles = getChangedFiles();
+  const transformedGitFiles = transformGitFiles(gitChangedFiles);
+  const currentJestCoverage = await getCurrentBranchJestCoverage(transformedGitFiles);
+  const baseJestCoverage = await getBaseBranchJestCoverage(transformedGitFiles);
+  const jestCoverageDiff = mergeJestCoverage(currentJestCoverage, baseJestCoverage);
+  saveCoverageDiff(jestCoverageDiff);
+  const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
   console.log(message);
 };
 

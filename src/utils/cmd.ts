@@ -1,6 +1,7 @@
 // tslint:disable: no-console
 import { spawn, SpawnOptions } from 'child_process';
 import path from 'path';
+import k from 'kleur';
 
 const CONSOLE_CLEAR_TIMEOUT = 15; // seconds
 /**
@@ -58,7 +59,7 @@ const ignoreWarnings = [
   /.*PackFileCacheStrategy.*Skipped not serializable cache item 'CopyWebpackPlugin.*No serializer registered for RawSource/,
   /.*('bufferutil'|'utf-8-validate'|the request of a dependency is an expression).*/,
 ]
-const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
+export const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
   return new Promise((resolve, reject) => {
     const [_command, ...args] = command.split(' ');
     let output = '';
@@ -81,13 +82,14 @@ const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
       raw = nodeBin(_command);
     }
 
-    console.debug({ args });
+    console.debug(k.dim(printCommand(command, info)));
     
     const cmd = Array.isArray(args) ? spawn(raw, args, options) : spawn(raw, options);
 
     cmd.stdout.on('data', (data) => {
-      if (meta.silent === false) {
+      if (meta.silent) {
         output += data;
+      } else {
         process.stdout.write(`${printCommand(_command, info)}: ${data}`);
         if (info.onStdout) {
           info.onStdout(data);
@@ -97,7 +99,7 @@ const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
     });
     cmd.stderr.on('data', (data) => {
       shouldClear = false;
-      if (meta.silent === false) {
+      if (!meta.silent) {
         const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
         const command = `${printCommand(_command, info)}: ${data}`;
         const withColor = Array.isArray(args) && args.includes('test') ? command : command;
@@ -109,12 +111,10 @@ const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
     });
 
     cmd.on('close', (code) => {
-      console.log(`${printCommand(_command, info)}: Process exited with error code ${code}`);
+      if (code !== 0) {
+        console.log(`${printCommand(_command, info)}: Process exited with error code ${code}`);
+      }
       code === 0 ? resolve(output) : reject(code);
     });
   });
-};
-
-module.exports = {
-  runner: runner
 };

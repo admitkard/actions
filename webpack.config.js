@@ -1,5 +1,6 @@
 const path = require('path');
 const fs = require('fs');
+const CopyPlugin = require("copy-webpack-plugin");
 
 const getFoldersInDir = (directory) => {
   const folders = [];
@@ -27,7 +28,9 @@ const getActionName = (env) => {
 
 const getWebpackConfig = (env, argv) => {
   const actionName = getActionName(env);
-  const entry = path.join(process.cwd(), 'src/actions', actionName, 'index.ts');
+  const actionsDir = path.join(process.cwd(), 'src/actions', actionName);
+  const entry = path.join(actionsDir, 'index.ts');
+
   const config = {
     mode: 'production',
     entry: entry,
@@ -42,6 +45,13 @@ const getWebpackConfig = (env, argv) => {
         exclude: /node_modules/,
       }],
     },
+    plugins: [
+      new CopyPlugin({
+        patterns: [
+          { from: path.join(actionsDir, 'action.yml'), to: path.join(__dirname) },
+        ],
+      }),
+    ],
     resolve: {
       extensions: ['.tsx', '.ts', '.js'],
     },
