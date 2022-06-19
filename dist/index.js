@@ -132,7 +132,7 @@ exports.MIN_COVERAGE = {
     functions: 25,
     branches: 25,
 };
-exports.BASE_BRANCH = 'master';
+exports.BASE_BRANCH = process.env.GITHUB_BASE_REF || 'dev';
 exports.COVERAGE_SUMMARY = 'coverage-summary.json';
 exports.COVERAGE_DIFF = 'coverage-diff.json';
 exports.DISALLOWED_FILES = [
@@ -189,9 +189,16 @@ const getFileDisplayName = (fileName) => {
     }
     return fileDetails;
 };
-const getChangedFiles = () => {
+const fetchRequiredBranches = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     git_1.git.base = jestConstants_1.BASE_BRANCH;
-    git_1.git.head = git_1.git.current;
+    git_1.git.head = process.env.GITHUB_HEAD_REF || git_1.git.current;
+    // const requiredBranches = [git.base, git.head];
+    // echo ${GITHUB_HEAD_REF} ${GITHUB_BASE_REF} ${{ github.event.pull_request.head.sha }}
+    yield (0, utils_1.runner)(`git fetch --no-tags --depth=1 origin ${git_1.git.base}`);
+    yield (0, utils_1.runner)(`git checkout -b ${git_1.git.base}`);
+    yield (0, utils_1.runner)(`git checkout ${git_1.git.head}`);
+});
+const getChangedFiles = () => {
     const filteredChangedFiles = git_1.git.changedFiles.filter((changedFile) => !(0, jestUtils_1.isFileDisallowed)(changedFile.fileName));
     console.debug({ changedFiles: git_1.git.changedFiles, filteredChangedFiles });
     return filteredChangedFiles;
@@ -278,6 +285,7 @@ const coverageMessage = (transformedGitFiles, jestCoverageDiff) => {
     return `${additionalInfoBefore.join('\n')}\n\n${tableMd}\n\n${additionalInfoAfter.join('\n')}`;
 };
 const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+    yield fetchRequiredBranches();
     const gitChangedFiles = getChangedFiles();
     const transformedGitFiles = transformGitFiles(gitChangedFiles);
     const currentJestCoverage = yield getCurrentBranchJestCoverage(transformedGitFiles);
