@@ -7793,8 +7793,8 @@ exports.git = gitFactory();
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.addOrRenewCommentOnPR = exports.addCommentOnPR = exports.createMarkdownTable = exports.getFileStatusIcon = void 0;
 const tslib_1 = __webpack_require__(655);
-const core_1 = tslib_1.__importDefault(__webpack_require__(2225));
-const github_1 = tslib_1.__importDefault(__webpack_require__(8142));
+const core = tslib_1.__importStar(__webpack_require__(2225));
+const github = tslib_1.__importStar(__webpack_require__(8142));
 const getFileStatusIcon = (status = '') => {
     if (status === 'A') {
         return '<b title="Added">🟩</b>';
@@ -7833,18 +7833,18 @@ const createMarkdownTable = (headers) => {
 };
 exports.createMarkdownTable = createMarkdownTable;
 const addCommentOnPR = (message, identifier) => {
-    const token = core_1.default.getInput('token');
-    const octokit = github_1.default.getOctokit(token);
-    const context = github_1.default.context;
+    const token = core.getInput('token');
+    const octokit = github.getOctokit(token);
+    const context = github.context;
     const prId = context.payload.pull_request.number;
     const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n' + `_${identifier}_` }));
     return newComment;
 };
 exports.addCommentOnPR = addCommentOnPR;
 const addOrRenewCommentOnPR = (message, identifier) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    const token = core_1.default.getInput('token');
-    const octokit = github_1.default.getOctokit(token);
-    const context = github_1.default.context;
+    const token = core.getInput('token');
+    const octokit = github.getOctokit(token);
+    const context = github.context;
     const prId = context.payload.pull_request.number;
     const comments = yield octokit.rest.issues.listComments(Object.assign(Object.assign({}, context.repo), { issue_number: prId }));
     const comment = comments.data.find((comment) => comment.body.includes(identifier));
