@@ -59,6 +59,18 @@ export const addCommentOnPR = (message: string, identifier: string) => {
   return newComment;
 }
 
+export const deleteComment = async (commentId: number) => {
+  const token = core.getInput('token');
+  const octokit = github.getOctokit(token);
+  const context = github.context;
+  const deleteComment = await octokit.rest.issues.deleteComment({
+    ...context.repo,
+    comment_id: commentId,
+  });
+  console.info(`Deleted comment: ${commentId}`);
+  return deleteComment;
+}
+
 export const addOrRenewCommentOnPR = async (message: string, identifier: string) => {
   const token = core.getInput('token');
   const octokit = github.getOctokit(token);
@@ -79,4 +91,20 @@ export const addOrRenewCommentOnPR = async (message: string, identifier: string)
   } else {
     return addCommentOnPR(message, identifier);
   }
+}
+
+export const addNewSingletonComment = async (message: string, identifier: string) => {
+  const token = core.getInput('token');
+  const octokit = github.getOctokit(token);
+  const context = github.context;
+  const prId = context.payload.pull_request.number;
+  const comments = await octokit.rest.issues.listComments({
+    ...context.repo,
+    issue_number: prId,
+  });
+  const comment = comments.data.find((comment) => comment.body.includes(identifier));
+  if (comment) {
+    await deleteComment(comment.id);
+  }
+  return addCommentOnPR(message, identifier);
 }
