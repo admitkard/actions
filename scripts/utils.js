@@ -88,7 +88,7 @@ const runner = (command, meta = {}) => {
     });
     cmd.stderr.on('data', (data) => {
       shouldClear = false;
-      if (meta.silent === false) {
+      if (!meta.silent) {
         const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
         const command = `${printCommand(_command, info)}: ${data}`;
         const withColor = Array.isArray(args) && args.includes('test') ? command : command;
