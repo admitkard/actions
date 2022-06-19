@@ -46,7 +46,8 @@ const fetchRequiredBranches = async () => {
   // echo ${GITHUB_HEAD_REF} ${GITHUB_BASE_REF} ${{ github.event.pull_request.head.sha }}
   await runner(`git fetch --no-tags --depth=1 origin ${git.base}`);
   await runner(`git checkout -b ${git.base}`);
-  await runner(`git checkout ${git.head}`);
+  await runner(`git fetch --no-tags --depth=1 origin ${git.head}`);
+  await runner(`git checkout -b ${git.head}`);
 }
 
 const getChangedFiles = () => {
