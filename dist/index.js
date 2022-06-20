@@ -7387,7 +7387,7 @@ const fetchRequiredBranches = () => tslib_1.__awaiter(void 0, void 0, void 0, fu
 });
 const getChangedFiles = () => {
     const filteredChangedFiles = git_1.git.changedFiles.filter((changedFile) => !(0, jestUtils_1.isFileDisallowed)(changedFile.fileName));
-    console.debug('::debug::', { changedFiles: git_1.git.changedFiles, filteredChangedFiles });
+    console.debug({ changedFiles: git_1.git.changedFiles, filteredChangedFiles });
     if (filteredChangedFiles.length === 0) {
         (0, github_1.addCommentOnPR)(`No testable files found in the PR.`, '`Action:JestCoverage`');
         process.exit(0);
@@ -7405,21 +7405,25 @@ const getJestChangedFilesCoverage = (changedFiles) => tslib_1.__awaiter(void 0, 
     changedFiles.forEach((changedFile) => {
         fileCoverages[changedFile.fileName] = coverage[changedFile.fileName];
     });
-    console.debug('::debug::', { fileCoverages, changedFiles });
+    console.debug({ fileCoverages });
     return fileCoverages;
 });
 const getCurrentBranchJestCoverage = (changedFiles) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    console.debug('::debug::', kleur_1.default.blue('Getting jest coverage of current branch...'));
+    console.group('Jest coverage of current branch');
+    console.debug(kleur_1.default.blue('Getting jest coverage of current branch...'));
     const fileCoverages = yield getJestChangedFilesCoverage(changedFiles);
-    console.debug(kleur_1.default.blue('Jest coverage done for current branch.'));
+    console.info(kleur_1.default.blue('Jest coverage done for current branch.'));
+    console.groupEnd();
     return fileCoverages;
 });
 const getBaseBranchJestCoverage = (changedFiles) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    console.debug('::debug::', kleur_1.default.blue('Getting jest coverage of base branch...'));
+    console.group('Jest coverage of base branch');
+    console.debug(kleur_1.default.blue('Getting jest coverage of base branch...'));
     git_1.git.checkout(jestConstants_1.BASE_BRANCH);
     const fileCoverages = yield getJestChangedFilesCoverage(changedFiles);
     git_1.git.checkout(git_1.git.head);
-    console.debug(kleur_1.default.blue('Jest coverage done for base branch.'));
+    console.info(kleur_1.default.blue('Jest coverage done for base branch.'));
+    console.groupEnd();
     return fileCoverages;
 });
 const getMetricCoverageDiff = (currentCoverage, baseCoverage, metricName) => {
@@ -7433,7 +7437,8 @@ const getMetricCoverageDiff = (currentCoverage, baseCoverage, metricName) => {
 };
 const mergeJestCoverage = (currentJestCoverage, baseJestCoverage) => {
     const fileCoverage = {};
-    console.log('::debug::', { currentJestCoverage, baseJestCoverage });
+    console.group('Merging jest coverage');
+    console.debug({ currentJestCoverage, baseJestCoverage });
     Object.keys(currentJestCoverage).forEach((fileName) => {
         const currentCoverage = currentJestCoverage[fileName];
         const baseCoverage = baseJestCoverage[fileName];
@@ -7444,6 +7449,7 @@ const mergeJestCoverage = (currentJestCoverage, baseJestCoverage) => {
             statements: getMetricCoverageDiff(currentCoverage, baseCoverage, 'statements'),
         };
     });
+    console.groupEnd();
     return fileCoverage;
 };
 const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
@@ -7473,20 +7479,31 @@ const coverageMessage = (transformedGitFiles, jestCoverageDiff) => {
     const additionalInfoBefore = [];
     additionalInfoBefore.push(`Status: ${passed ? '🟢 Well Done' : '🔴'}`);
     const additionalInfoAfter = [];
-    return `${additionalInfoBefore.join('\n')}\n\n${tableMd}\n\n${additionalInfoAfter.join('\n')}`;
+    const message = `${additionalInfoBefore.join('\n')}\n\n${tableMd}\n\n${additionalInfoAfter.join('\n')}`;
+    console.group('Jest coverage-diff message');
+    console.debug(message);
+    console.groupEnd();
+    return message;
 };
 const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     yield fetchRequiredBranches();
+    console.group('Changed Files');
     const gitChangedFiles = getChangedFiles();
     const transformedGitFiles = transformGitFiles(gitChangedFiles);
-    const currentJestCoverage = yield getCurrentBranchJestCoverage(transformedGitFiles);
-    const baseJestCoverage = yield getBaseBranchJestCoverage(transformedGitFiles);
-    const jestCoverageDiff = mergeJestCoverage(currentJestCoverage, baseJestCoverage);
-    (0, jestUtils_1.saveCoverageDiff)(jestCoverageDiff);
-    const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
-    console.log(message);
-    if (message) {
-        yield (0, github_1.addNewSingletonComment)(message, '`Action:JestCoverage`');
+    console.groupEnd();
+    try {
+        const currentJestCoverage = yield getCurrentBranchJestCoverage(transformedGitFiles);
+        const baseJestCoverage = yield getBaseBranchJestCoverage(transformedGitFiles);
+        const jestCoverageDiff = mergeJestCoverage(currentJestCoverage, baseJestCoverage);
+        (0, jestUtils_1.saveCoverageDiff)(jestCoverageDiff);
+        const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
+        if (message) {
+            yield (0, github_1.addNewSingletonComment)(message, '`Action:JestCoverage`');
+        }
+    }
+    catch (err) {
+        console.log({ err });
+        process.exit(1);
     }
 });
 const main = () => {
@@ -7682,7 +7699,8 @@ const ignoreWarnings = [
 const runner = (command, meta = {}) => {
     return new Promise((resolve, reject) => {
         const [_command, ...args] = command.split(' ');
-        let output = '';
+        let stdout = '';
+        let stderr = '';
         const packageName = meta.package;
         const info = Object.assign(Object.assign({}, (meta.info || {})), { package: packageName });
         const options = Object.assign({ shell: process.platform == 'win32', env: process.env }, (meta.options || {}));
@@ -7694,18 +7712,15 @@ const runner = (command, meta = {}) => {
         console.debug(kleur_1.default.dim(printCommand(command, info)));
         const cmd = Array.isArray(args) ? (0, child_process_1.spawn)(raw, args, options) : (0, child_process_1.spawn)(raw, options);
         cmd.stdout.on('data', (data) => {
-            if (meta.silent) {
-                output += data;
-            }
-            else {
-                process.stdout.write(`${printCommand(_command, info)}: ${data}`);
-                if (info.onStdout) {
-                    info.onStdout(data);
-                }
+            stdout += data;
+            process.stdout.write(`${printCommand(_command, info)}: ${data}`);
+            if (info.onStdout) {
+                info.onStdout(data);
             }
         });
         cmd.stderr.on('data', (data) => {
             shouldClear = false;
+            stderr += data;
             const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
             let command = `${printCommand(_command, info)}: ${data}`;
             if (data && data.toString().startsWith(`::`)) {
@@ -7720,7 +7735,7 @@ const runner = (command, meta = {}) => {
             if (code !== 0) {
                 console.log(`${printCommand(_command, info)}: Process exited with error code ${code}`);
             }
-            code === 0 ? resolve(output) : reject(code);
+            code === 0 ? resolve(stdout) : reject(stderr);
         });
     });
 };
@@ -7914,6 +7929,38 @@ __exportStar(__webpack_require__(1898), exports);
 __exportStar(__webpack_require__(4732), exports);
 __exportStar(__webpack_require__(6997), exports);
 __exportStar(__webpack_require__(7275), exports);
+__webpack_require__(6645); // Side-effects
+
+
+/***/ }),
+
+/***/ 6645:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.consoleFactory = void 0;
+const _console = console;
+const consoleFactory = () => {
+    return Object.assign(Object.assign({}, global.console), { debug: (...args) => {
+            let message = '';
+            const isMultiLine = args.some((arg) => typeof arg === 'string' && arg.includes('\n'));
+            if (isMultiLine) {
+                message = args.map((arg) => JSON.stringify(arg)).join('\n');
+            }
+            else {
+                message = args.map((arg) => JSON.stringify(arg)).join(' ');
+            }
+            _console.debug(`::debug::${message}`);
+        }, group: (groupName) => {
+            _console.log(`::group::${groupName}`);
+        }, groupEnd: () => {
+            _console.log(`::endgroup::`);
+        } });
+};
+exports.consoleFactory = consoleFactory;
+global.console = (0, exports.consoleFactory)();
 
 
 /***/ }),
