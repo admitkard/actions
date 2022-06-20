@@ -96,10 +96,13 @@ export const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
         }
       }
     });
-    cmd.stderr.on('data', (data) => {
+    cmd.stderr.on('data', (data: string) => {
       shouldClear = false;
       const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
-      const command = `${printCommand(_command, info)}: ${data}`;
+      let command = `${printCommand(_command, info)}: ${data}`;
+      if (data.startsWith(`::`)) {
+        command = data;
+      }
       const withColor = Array.isArray(args) && args.includes('test') ? command : command;
       if (shouldPrint) {
         process.stderr.write(withColor);

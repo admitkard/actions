@@ -53,7 +53,7 @@ const fetchRequiredBranches = async () => {
 
 const getChangedFiles = () => {
   const filteredChangedFiles = git.changedFiles.filter((changedFile) => !isFileDisallowed(changedFile.fileName));
-  console.debug({changedFiles: git.changedFiles, filteredChangedFiles});
+  console.debug('::debug::', {changedFiles: git.changedFiles, filteredChangedFiles});
   if (filteredChangedFiles.length === 0) {
     addCommentOnPR(`No testable files found in the PR.`, '`Action:JestCoverage`')
     process.exit(0);
@@ -78,19 +78,19 @@ const getJestChangedFilesCoverage = async (changedFiles: FileDetails[]) => {
   changedFiles.forEach((changedFile) => {
     fileCoverages[changedFile.fileName] = coverage[changedFile.fileName];
   });
-  console.debug({ fileCoverages, changedFiles });
+  console.debug('::debug::', { fileCoverages, changedFiles });
   return fileCoverages;
 };
 
 const getCurrentBranchJestCoverage = async (changedFiles: FileDetails[]) => {
-  console.debug(k.blue('Getting jest coverage of current branch...'));
+  console.debug('::debug::', k.blue('Getting jest coverage of current branch...'));
   const fileCoverages = await getJestChangedFilesCoverage(changedFiles);
   console.debug(k.blue('Jest coverage done for current branch.'));
   return fileCoverages;
 };
 
 const getBaseBranchJestCoverage = async (changedFiles: FileDetails[]) => {
-  console.debug(k.blue('Getting jest coverage of base branch...'));
+  console.debug('::debug::', k.blue('Getting jest coverage of base branch...'));
   git.checkout(BASE_BRANCH);
   const fileCoverages = await getJestChangedFilesCoverage(changedFiles);
   git.checkout(git.head);
@@ -110,7 +110,7 @@ const getMetricCoverageDiff = (currentCoverage: JestCoverageSummary, baseCoverag
 
 const mergeJestCoverage = (currentJestCoverage: Record<string, JestCoverageSummary>, baseJestCoverage: Record<string, JestCoverageSummary>) => {
   const fileCoverage: Record<string, JestCoverageDiff> = {}; 
-  console.log({ currentJestCoverage, baseJestCoverage });
+  console.log('::debug::', { currentJestCoverage, baseJestCoverage });
   Object.keys(currentJestCoverage).forEach((fileName) => {
     const currentCoverage = currentJestCoverage[fileName];
     const baseCoverage = baseJestCoverage[fileName];
