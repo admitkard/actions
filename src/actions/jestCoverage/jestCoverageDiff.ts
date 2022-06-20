@@ -53,7 +53,7 @@ const fetchRequiredBranches = async () => {
 
 const getChangedFiles = () => {
   const filteredChangedFiles = git.changedFiles.filter((changedFile) => !isFileDisallowed(changedFile.fileName));
-  console.debug('::debug::', {changedFiles: git.changedFiles, filteredChangedFiles});
+  console.debug({changedFiles: git.changedFiles, filteredChangedFiles});
   if (filteredChangedFiles.length === 0) {
     addCommentOnPR(`No testable files found in the PR.`, '`Action:JestCoverage`')
     process.exit(0);
@@ -78,23 +78,27 @@ const getJestChangedFilesCoverage = async (changedFiles: FileDetails[]) => {
   changedFiles.forEach((changedFile) => {
     fileCoverages[changedFile.fileName] = coverage[changedFile.fileName];
   });
-  console.debug('::debug::', { fileCoverages, changedFiles });
+  console.debug({ fileCoverages });
   return fileCoverages;
 };
 
 const getCurrentBranchJestCoverage = async (changedFiles: FileDetails[]) => {
-  console.debug('::debug::', k.blue('Getting jest coverage of current branch...'));
+  console.group('Jest coverage of current branch');
+  console.debug(k.blue('Getting jest coverage of current branch...'));
   const fileCoverages = await getJestChangedFilesCoverage(changedFiles);
-  console.debug(k.blue('Jest coverage done for current branch.'));
+  console.info(k.blue('Jest coverage done for current branch.'));
+  console.groupEnd();
   return fileCoverages;
 };
 
 const getBaseBranchJestCoverage = async (changedFiles: FileDetails[]) => {
-  console.debug('::debug::', k.blue('Getting jest coverage of base branch...'));
+  console.group('Jest coverage of base branch');
+  console.debug(k.blue('Getting jest coverage of base branch...'));
   git.checkout(BASE_BRANCH);
   const fileCoverages = await getJestChangedFilesCoverage(changedFiles);
   git.checkout(git.head);
-  console.debug(k.blue('Jest coverage done for base branch.'));
+  console.info(k.blue('Jest coverage done for base branch.'));
+  console.groupEnd();
   return fileCoverages;
 };
 
@@ -110,7 +114,8 @@ const getMetricCoverageDiff = (currentCoverage: JestCoverageSummary, baseCoverag
 
 const mergeJestCoverage = (currentJestCoverage: Record<string, JestCoverageSummary>, baseJestCoverage: Record<string, JestCoverageSummary>) => {
   const fileCoverage: Record<string, JestCoverageDiff> = {}; 
-  console.log('::debug::', { currentJestCoverage, baseJestCoverage });
+  console.group('Merging jest coverage');
+  console.debug({ currentJestCoverage, baseJestCoverage });
   Object.keys(currentJestCoverage).forEach((fileName) => {
     const currentCoverage = currentJestCoverage[fileName];
     const baseCoverage = baseJestCoverage[fileName];
@@ -121,6 +126,7 @@ const mergeJestCoverage = (currentJestCoverage: Record<string, JestCoverageSumma
       statements: getMetricCoverageDiff(currentCoverage, baseCoverage, 'statements'),
     }
   });
+  console.groupEnd();
   return fileCoverage;
 }
 
@@ -154,21 +160,31 @@ const coverageMessage = (transformedGitFiles: FileDetails[], jestCoverageDiff: R
   const additionalInfoBefore = [];
   additionalInfoBefore.push(`Status: ${passed ? '🟢 Well Done' : '🔴'}`);
   const additionalInfoAfter = [];
-  return `${additionalInfoBefore.join('\n')}\n\n${tableMd}\n\n${additionalInfoAfter.join('\n')}`;
+  const message = `${additionalInfoBefore.join('\n')}\n\n${tableMd}\n\n${additionalInfoAfter.join('\n')}`;
+  console.group('Jest coverage-diff message');
+  console.debug(message);
+  console.groupEnd();
+  return message;
 }
 
 const getCoverage = async () => {
   await fetchRequiredBranches();
+  console.group('Changed Files');
   const gitChangedFiles = getChangedFiles();
   const transformedGitFiles = transformGitFiles(gitChangedFiles);
-  const currentJestCoverage = await getCurrentBranchJestCoverage(transformedGitFiles);
-  const baseJestCoverage = await getBaseBranchJestCoverage(transformedGitFiles);
-  const jestCoverageDiff = mergeJestCoverage(currentJestCoverage, baseJestCoverage);
-  saveCoverageDiff(jestCoverageDiff);
-  const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
-  console.log(message);
-  if (message) {
-    await addNewSingletonComment(message, '`Action:JestCoverage`');
+  console.groupEnd();
+  try {
+    const currentJestCoverage = await getCurrentBranchJestCoverage(transformedGitFiles);
+    const baseJestCoverage = await getBaseBranchJestCoverage(transformedGitFiles);
+    const jestCoverageDiff = mergeJestCoverage(currentJestCoverage, baseJestCoverage);
+    saveCoverageDiff(jestCoverageDiff);
+    const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
+    if (message) {
+      await addNewSingletonComment(message, '`Action:JestCoverage`');
+    }
+  } catch (err) {
+    console.log({err});
+    process.exit(1);
   }
 };
 

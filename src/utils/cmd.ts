@@ -62,7 +62,8 @@ const ignoreWarnings = [
 export const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
   return new Promise((resolve, reject) => {
     const [_command, ...args] = command.split(' ');
-    let output = '';
+    let stdout = '';
+    let stderr = '';
 
     const packageName = meta.package;
     const info: Record<string, any> = {
@@ -87,17 +88,15 @@ export const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
     const cmd = Array.isArray(args) ? spawn(raw, args, options) : spawn(raw, options);
 
     cmd.stdout.on('data', (data) => {
-      if (meta.silent) {
-        output += data;
-      } else {
-        process.stdout.write(`${printCommand(_command, info)}: ${data}`);
-        if (info.onStdout) {
-          info.onStdout(data);
-        }
+      stdout += data;
+      process.stdout.write(`${printCommand(_command, info)}: ${data}`);
+      if (info.onStdout) {
+        info.onStdout(data);
       }
     });
     cmd.stderr.on('data', (data: string) => {
       shouldClear = false;
+      stderr += data;
       const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
       let command = `${printCommand(_command, info)}: ${data}`;
       if (data && data.toString().startsWith(`::`)) {
@@ -113,7 +112,7 @@ export const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
       if (code !== 0) {
         console.log(`${printCommand(_command, info)}: Process exited with error code ${code}`);
       }
-      code === 0 ? resolve(output) : reject(code);
+      code === 0 ? resolve(stdout) : reject(stderr);
     });
   });
 };
