@@ -8,6 +8,7 @@ import { getJestCoverage, isFileDisallowed, JestCoverageDiff, JestCoverageSummar
 import { getNpmRunnerCommand, isMonorepo } from '../../utils/repo';
 import { convertCoverageToReportCell } from './jestReportUtils'; 4
 import k from 'kleur';
+import stripAnsi from 'strip-ansi';
 
 let passed = true;
 interface FileDetails {
@@ -183,9 +184,8 @@ const getCoverage = async () => {
       await addNewSingletonComment(message, '`Action:JestCoverage`');
     }
   } catch (_err) {
-    // const testSummaryRegex = /(Test Suites:(?:.*\\n)+.*Time:\s+[\d.]+ s)/gm;
-    const err = _err.toString() as string;
-    const testSummaryRegex = /.*(Test Suites:.*Time:.*\d s).*/gm;
+    const err = stripAnsi(_err);
+    const testSummaryRegex = /(Test Suites:(?:.*\\n)+.*Time:\s+[\d.]+ s)/gm;
     const testSummary = testSummaryRegex.exec(err);
     console.log({
       testSuite: err.indexOf('Test Suites: '),
