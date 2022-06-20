@@ -37,7 +37,7 @@ const clearDebounce = debounce(() => {
   }
 }, CONSOLE_CLEAR_TIMEOUT * 1000);
 
-const setClear = () => {
+export const setClear = () => {
   if (shouldClear) {
     console.log("\\033c");
     console.log("Console Cleared");
@@ -95,19 +95,15 @@ export const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
           info.onStdout(data);
         }
       }
-      setClear();
     });
     cmd.stderr.on('data', (data) => {
       shouldClear = false;
-      if (!meta.silent) {
-        const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
-        const command = `${printCommand(_command, info)}: ${data}`;
-        const withColor = Array.isArray(args) && args.includes('test') ? command : command;
-        if (shouldPrint) {
-          process.stderr.write(withColor);
-        }
+      const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
+      const command = `${printCommand(_command, info)}: ${data}`;
+      const withColor = Array.isArray(args) && args.includes('test') ? command : command;
+      if (shouldPrint) {
+        process.stderr.write(withColor);
       }
-      setClear();
     });
 
     cmd.on('close', (code) => {
