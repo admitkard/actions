@@ -7708,7 +7708,7 @@ const runner = (command, meta = {}) => {
             shouldClear = false;
             const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
             let command = `${printCommand(_command, info)}: ${data}`;
-            if (data.startsWith(`::`)) {
+            if (data && data.toString().startsWith(`::`)) {
                 command = data;
             }
             const withColor = Array.isArray(args) && args.includes('test') ? command : command;
