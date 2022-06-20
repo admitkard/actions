@@ -7387,7 +7387,11 @@ const fetchRequiredBranches = () => tslib_1.__awaiter(void 0, void 0, void 0, fu
 });
 const getChangedFiles = () => {
     const filteredChangedFiles = git_1.git.changedFiles.filter((changedFile) => !(0, jestUtils_1.isFileDisallowed)(changedFile.fileName));
-    console.debug({ changedFiles: git_1.git.changedFiles, filteredChangedFiles });
+    console.debug('::debug::', { changedFiles: git_1.git.changedFiles, filteredChangedFiles });
+    if (filteredChangedFiles.length === 0) {
+        (0, github_1.addCommentOnPR)(`No testable files found in the PR.`, '`Action:JestCoverage`');
+        process.exit(0);
+    }
     return filteredChangedFiles;
 };
 const transformGitFiles = (changedFiles) => {
@@ -7401,17 +7405,17 @@ const getJestChangedFilesCoverage = (changedFiles) => tslib_1.__awaiter(void 0, 
     changedFiles.forEach((changedFile) => {
         fileCoverages[changedFile.fileName] = coverage[changedFile.fileName];
     });
-    console.debug({ fileCoverages, changedFiles });
+    console.debug('::debug::', { fileCoverages, changedFiles });
     return fileCoverages;
 });
 const getCurrentBranchJestCoverage = (changedFiles) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    console.debug(kleur_1.default.blue('Getting jest coverage of current branch...'));
+    console.debug('::debug::', kleur_1.default.blue('Getting jest coverage of current branch...'));
     const fileCoverages = yield getJestChangedFilesCoverage(changedFiles);
     console.debug(kleur_1.default.blue('Jest coverage done for current branch.'));
     return fileCoverages;
 });
 const getBaseBranchJestCoverage = (changedFiles) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    console.debug(kleur_1.default.blue('Getting jest coverage of base branch...'));
+    console.debug('::debug::', kleur_1.default.blue('Getting jest coverage of base branch...'));
     git_1.git.checkout(jestConstants_1.BASE_BRANCH);
     const fileCoverages = yield getJestChangedFilesCoverage(changedFiles);
     git_1.git.checkout(git_1.git.head);
@@ -7429,7 +7433,7 @@ const getMetricCoverageDiff = (currentCoverage, baseCoverage, metricName) => {
 };
 const mergeJestCoverage = (currentJestCoverage, baseJestCoverage) => {
     const fileCoverage = {};
-    console.log({ currentJestCoverage, baseJestCoverage });
+    console.log('::debug::', { currentJestCoverage, baseJestCoverage });
     Object.keys(currentJestCoverage).forEach((fileName) => {
         const currentCoverage = currentJestCoverage[fileName];
         const baseCoverage = baseJestCoverage[fileName];
@@ -7482,7 +7486,7 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
     const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
     console.log(message);
     if (message) {
-        yield (0, github_1.addNewSingletonComment)(message, '`jestCoverageDiff`');
+        yield (0, github_1.addNewSingletonComment)(message, '`Action:JestCoverage`');
     }
 });
 const main = () => {
@@ -7625,7 +7629,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.runner = void 0;
+exports.runner = exports.setClear = void 0;
 // tslint:disable: no-console
 const child_process_1 = __webpack_require__(2081);
 const path_1 = __importDefault(__webpack_require__(1017));
@@ -7670,6 +7674,7 @@ const setClear = () => {
         clearDebounce();
     }
 };
+exports.setClear = setClear;
 const ignoreWarnings = [
     /.*PackFileCacheStrategy.*Skipped not serializable cache item 'CopyWebpackPlugin.*No serializer registered for RawSource/,
     /.*('bufferutil'|'utf-8-validate'|the request of a dependency is an expression).*/,
@@ -7698,19 +7703,18 @@ const runner = (command, meta = {}) => {
                     info.onStdout(data);
                 }
             }
-            setClear();
         });
         cmd.stderr.on('data', (data) => {
             shouldClear = false;
-            if (!meta.silent) {
-                const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
-                const command = `${printCommand(_command, info)}: ${data}`;
-                const withColor = Array.isArray(args) && args.includes('test') ? command : command;
-                if (shouldPrint) {
-                    process.stderr.write(withColor);
-                }
+            const shouldPrint = ignoreWarnings.some((ignore) => !ignore.test(data));
+            let command = `${printCommand(_command, info)}: ${data}`;
+            if (data.startsWith(`::`)) {
+                command = data;
             }
-            setClear();
+            const withColor = Array.isArray(args) && args.includes('test') ? command : command;
+            if (shouldPrint) {
+                process.stderr.write(withColor);
+            }
         });
         cmd.on('close', (code) => {
             if (code !== 0) {
