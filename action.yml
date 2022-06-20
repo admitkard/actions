@@ -1,7 +1,0 @@
-name: 'UT Coverage'
-description: 'Runs the UT coverage tests'
-author: 'Piyush'
-
-runs:
-  using: 'node16'
-  main: 'dist/index.js'

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // tslint:disable: no-console
 import { runner, truncateString } from '../../utils';
-import { addNewSingletonComment, createMarkdownTable, getFileStatusIcon } from '../../utils/github';
+import { addCommentOnPR, addNewSingletonComment, createMarkdownTable, getFileStatusIcon } from '../../utils/github';
 import { git, GitChangedFile } from '../../utils/git';
 import { BASE_BRANCH, FILE_NAME_LIMIT, MIN_COVERAGE } from './jestConstants';
 import { getJestCoverage, isFileDisallowed, JestCoverageDiff, JestCoverageSummary, saveCoverageDiff } from './jestUtils';
@@ -54,6 +54,10 @@ const fetchRequiredBranches = async () => {
 const getChangedFiles = () => {
   const filteredChangedFiles = git.changedFiles.filter((changedFile) => !isFileDisallowed(changedFile.fileName));
   console.debug({changedFiles: git.changedFiles, filteredChangedFiles});
+  if (filteredChangedFiles.length === 0) {
+    addCommentOnPR(`No testable files found in the PR.`, '`Action:JestCoverage`')
+    process.exit(0);
+  }
   return filteredChangedFiles;
 };
 
@@ -164,7 +168,7 @@ const getCoverage = async () => {
   const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
   console.log(message);
   if (message) {
-    await addNewSingletonComment(message, '`jestCoverageDiff`');
+    await addNewSingletonComment(message, '`Action:JestCoverage`');
   }
 };
 

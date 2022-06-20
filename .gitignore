@@ -1,4 +1,4 @@
-
+action.yml
 
 # Logs
 logs
@@ -26,5 +26,3 @@ dist/
 
 # Misc
 .DS_Store
-
-/action.yml
