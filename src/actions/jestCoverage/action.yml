@@ -2,6 +2,11 @@ name: 'UT Coverage'
 description: 'Runs the UT coverage tests'
 author: 'Piyush'
 
+inputs:
+  token:
+    description: 'Github Token'
+    required: true
+
 runs:
   using: 'node16'
   main: 'dist/index.js'
