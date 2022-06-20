@@ -184,7 +184,7 @@ const getCoverage = async () => {
       await addNewSingletonComment(message, '`Action:JestCoverage`');
     }
   } catch (_err) {
-    const err = stripAnsi(_err).replace(/\\n' +.*'/gim, '\n');
+    const err = stripAnsi(_err).replace(/\\n/gim, '\n');
     const testSummaryRegex = /(Test Suites:(?:.*\\n)+.*Time:\s+[\d.]+ s)/gm;
     const testSummary = testSummaryRegex.exec(err);
     console.log({
