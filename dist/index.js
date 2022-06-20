@@ -7507,10 +7507,10 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
         const testSummaryRegex = /.*(Test Suites:.*Time:.*\d s).*/gm;
         const testSummary = testSummaryRegex.exec(err);
         console.log({
-            testSuite: err.indexOf('Test Suites'),
-            time: err.indexOf('Time'),
+            testSuite: err.indexOf('Test Suites: '),
+            time: err.indexOf('Time:    '),
             timeEnd: err.indexOf(' s'),
-            testSummary: err.slice(err.indexOf('Test Suites'), err.indexOf('Time') + 20),
+            testSummary: err.slice(err.indexOf('Test Suites: '), err.indexOf('Time:    ') + 20),
         });
         console.log({ testSummary });
         process.exit(1);
