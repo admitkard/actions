@@ -7352,6 +7352,7 @@ const repo_1 = __webpack_require__(5557);
 const jestReportUtils_1 = __webpack_require__(2793);
 4;
 const kleur_1 = tslib_1.__importDefault(__webpack_require__(1391));
+const strip_ansi_1 = tslib_1.__importDefault(__webpack_require__(2405));
 let passed = true;
 const getFileDisplayName = (fileName) => {
     const isRepoMonorepo = (0, repo_1.isMonorepo)();
@@ -7502,9 +7503,8 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
         }
     }
     catch (_err) {
-        // const testSummaryRegex = /(Test Suites:(?:.*\\n)+.*Time:\s+[\d.]+ s)/gm;
-        const err = _err.toString();
-        const testSummaryRegex = /.*(Test Suites:.*Time:.*\d s).*/gm;
+        const err = (0, strip_ansi_1.default)(_err);
+        const testSummaryRegex = /(Test Suites:(?:.*\\n)+.*Time:\s+[\d.]+ s)/gm;
         const testSummary = testSummaryRegex.exec(err);
         console.log({
             testSuite: err.indexOf('Test Suites: '),
@@ -10774,6 +10774,42 @@ module.exports = require("tls");
 
 "use strict";
 module.exports = require("util");
+
+/***/ }),
+
+/***/ 2405:
+/***/ ((__unused_webpack___webpack_module__, __webpack_exports__, __webpack_require__) => {
+
+"use strict";
+// ESM COMPAT FLAG
+__webpack_require__.r(__webpack_exports__);
+
+// EXPORTS
+__webpack_require__.d(__webpack_exports__, {
+  "default": () => (/* binding */ stripAnsi)
+});
+
+;// CONCATENATED MODULE: ./node_modules/ansi-regex/index.js
+function ansiRegex({onlyFirst = false} = {}) {
+	const pattern = [
+	    '[\\u001B\\u009B][[\\]()#;?]*(?:(?:(?:(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]+)*|[a-zA-Z\\d]+(?:;[-a-zA-Z\\d\\/#&.:=?%@~_]*)*)?\\u0007)',
+		'(?:(?:\\d{1,4}(?:;\\d{0,4})*)?[\\dA-PR-TZcf-ntqry=><~]))'
+	].join('|');
+
+	return new RegExp(pattern, onlyFirst ? undefined : 'g');
+}
+
+;// CONCATENATED MODULE: ./node_modules/strip-ansi/index.js
+
+
+function stripAnsi(string) {
+	if (typeof string !== 'string') {
+		throw new TypeError(`Expected a \`string\`, got \`${typeof string}\``);
+	}
+
+	return string.replace(ansiRegex(), '');
+}
+
 
 /***/ }),
 
