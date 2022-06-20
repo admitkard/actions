@@ -182,10 +182,17 @@ const getCoverage = async () => {
     if (message) {
       await addNewSingletonComment(message, '`Action:JestCoverage`');
     }
-  } catch (err) {
+  } catch (_err) {
     // const testSummaryRegex = /(Test Suites:(?:.*\\n)+.*Time:\s+[\d.]+ s)/gm;
+    const err = _err.toString() as string;
     const testSummaryRegex = /.*(Test Suites:.*Time:.*\d s).*/gm;
     const testSummary = testSummaryRegex.exec(err);
+    console.log({
+      testSuite: err.indexOf('Test Suites'),
+      time: err.indexOf('Time'),
+      timeEnd: err.indexOf(' s'),
+      testSummary: err.slice(err.indexOf('Test Suites'), err.indexOf('Time') + 20 ),
+    });
     console.log({ testSummary });
     process.exit(1);
   }
