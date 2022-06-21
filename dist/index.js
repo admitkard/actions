@@ -7353,7 +7353,6 @@ const jestReportUtils_1 = __webpack_require__(2793);
 4;
 const kleur_1 = tslib_1.__importDefault(__webpack_require__(1391));
 const strip_ansi_1 = tslib_1.__importDefault(__webpack_require__(2405));
-let passed = true;
 const getFileDisplayName = (fileName) => {
     const isRepoMonorepo = (0, repo_1.isMonorepo)();
     const fileDetails = {};
@@ -7478,13 +7477,29 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
 const coverageMessage = (transformedGitFiles, jestCoverageDiff) => {
     const tableMd = convertDiffToMarkdownTable(transformedGitFiles, jestCoverageDiff);
     const additionalInfoBefore = [];
-    additionalInfoBefore.push(`Status: ${passed ? '🟢 Well Done' : '🔴'}`);
+    additionalInfoBefore.push(`Status: ${utils_1.globalState.get('passed') ? '🟢 Well Done' : '🔴 Some failures are reported'}`);
+    if (utils_1.globalState.get('failureReason')) {
+        additionalInfoBefore.push(`Failure Reasons:\n${utils_1.globalState.get('failureReason')}`);
+    }
     const additionalInfoAfter = [];
     const message = `${additionalInfoBefore.join('\n')}\n\n${tableMd}\n\n${additionalInfoAfter.join('\n')}`;
     console.group('Jest coverage-diff message');
     console.debug(message);
     console.groupEnd();
     return message;
+};
+const parseError = (_err) => {
+    let commentMessage = `Status: 🔴 An unknown failure occurred. Please check the test run.`;
+    const err = (0, strip_ansi_1.default)(_err).replace(/\\n/gim, '\n');
+    const testSummaryRegex = /(Test Suites:(?:.*\n)+.*Time:\s+[\d.]+ s)/gm;
+    const testSummaryMatch = testSummaryRegex.exec(err);
+    if (testSummaryMatch) {
+        let testSummary = testSummaryMatch[1];
+        testSummary.replace(/^\s+/gm, '');
+        testSummary.replace(/(\d+ failed)/g, '**$1**');
+        commentMessage = `Status: 🔴 Some failures are reported\n${testSummary}`;
+    }
+    return commentMessage;
 };
 const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     yield fetchRequiredBranches();
@@ -7503,16 +7518,8 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
         }
     }
     catch (_err) {
-        const err = (0, strip_ansi_1.default)(_err).replace(/\\n/gim, '\n');
-        const testSummaryRegex = /(Test Suites:(?:.*\n)+.*Time:\s+[\d.]+ s)/gm;
-        const testSummaryMatch = testSummaryRegex.exec(err);
-        console.log({ testSummaryMatch });
-        if (testSummaryMatch) {
-            let testSummary = testSummaryMatch[1];
-            testSummary.replace(/^\s+/gm, '');
-            testSummary.replace(/(\d+ failed)/g, '**$1**');
-            console.log(testSummary);
-        }
+        const commentMessage = parseError(_err);
+        (0, github_1.addNewSingletonComment)(commentMessage, '`Action:JestCoverage`');
         process.exit(1);
     }
 });
@@ -7525,24 +7532,28 @@ exports.main = main;
 /***/ }),
 
 /***/ 2793:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ ((__unused_webpack_module, exports, __webpack_require__) => {
 
 "use strict";
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.convertCoverageToReportCell = void 0;
+const utils_1 = __webpack_require__(5928);
 const convertCoverageToReportCell = (data, minCoverage, status) => {
-    let passed = false;
+    let passed = true;
+    let failureReason = utils_1.globalState.get('failureReason');
     let cell = '';
     let indicatorAdded = false;
     if (!indicatorAdded && status === 'A' && (data.pct.current < minCoverage)) { // New file no coverage
         cell += '<b title="No test coverage for new file">🚨 </b>';
         passed = false;
+        failureReason += '- No test coverage for new file.\n';
         indicatorAdded = true;
     }
     if (!indicatorAdded && data.pct.current < data.pct.base) { // Coverage reduced
         cell += '<b title="Coverage is reduced">🔴 </b>';
         passed = false;
+        failureReason += '- Coverage is reduced.\n';
         indicatorAdded = true;
     }
     if (!indicatorAdded && data.pct.current >= data.pct.base && data.pct.current < minCoverage) { // Coverage less than threshbase
@@ -7558,7 +7569,7 @@ const convertCoverageToReportCell = (data, minCoverage, status) => {
         cell += '←';
         cell += data.covered.base ? `<i title="${data.pct.base} (${data.covered.base}/${data.total.base})">_${Math.floor(data.pct.base)}%_</i>` : 'NA';
     }
-    console.log(passed);
+    utils_1.globalState.set({ passed, failureReason });
     return cell;
 };
 exports.convertCoverageToReportCell = convertCoverageToReportCell;
@@ -7939,6 +7950,7 @@ __exportStar(__webpack_require__(1898), exports);
 __exportStar(__webpack_require__(4732), exports);
 __exportStar(__webpack_require__(6997), exports);
 __exportStar(__webpack_require__(7275), exports);
+__exportStar(__webpack_require__(7901), exports);
 __webpack_require__(6645); // Side-effects
 
 
@@ -8048,6 +8060,41 @@ const getNpmRunnerCommand = (command) => {
     return `${npmRunner} run ${command}`;
 };
 exports.getNpmRunnerCommand = getNpmRunnerCommand;
+
+
+/***/ }),
+
+/***/ 7901:
+/***/ ((__unused_webpack_module, exports) => {
+
+"use strict";
+
+Object.defineProperty(exports, "__esModule", ({ value: true }));
+exports.globalState = exports.globalStateFactory = void 0;
+const globalStateFactory = () => {
+    let state = {};
+    function set(key, value) {
+        if (typeof key === 'string') {
+            state[key] = value;
+        }
+        else if (typeof key === 'object') {
+            state = Object.assign(Object.assign({}, state), key);
+        }
+    }
+    const get = (key) => {
+        return state[key];
+    };
+    const reset = (key) => {
+        delete state[key];
+    };
+    return {
+        set,
+        get,
+        reset,
+    };
+};
+exports.globalStateFactory = globalStateFactory;
+exports.globalState = (0, exports.globalStateFactory)();
 
 
 /***/ }),
