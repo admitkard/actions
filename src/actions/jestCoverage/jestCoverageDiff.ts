@@ -9,7 +9,6 @@ import { getNpmRunnerCommand, isMonorepo } from '../../utils/repo';
 import { convertCoverageToReportCell } from './jestReportUtils'; 4
 import k from 'kleur';
 import stripAnsi from 'strip-ansi';
-import test from 'node:test';
 
 let passed = true;
 interface FileDetails {
