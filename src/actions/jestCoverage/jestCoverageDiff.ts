@@ -170,7 +170,7 @@ const coverageMessage = (transformedGitFiles: FileDetails[], jestCoverageDiff: R
   return message;
 }
 
-const parseError = (_err: string) => {
+const parseErrorMessage = (_err: string) => {
   let commentMessage = `Status: 🔴 An unknown failure occurred. Please check the test run.`;
   const err = stripAnsi(_err).replace(/\\n/gim, '\n');
   const testSummaryRegex = /(Test Suites:(?:.*\n)+.*Time:\s+[\d.]+ s)/gm;
@@ -190,18 +190,23 @@ const getCoverage = async () => {
   const gitChangedFiles = getChangedFiles();
   const transformedGitFiles = transformGitFiles(gitChangedFiles);
   console.groupEnd();
+  let commentMessage = '';
   try {
+    globalState.set(({ passed: false }));
     const currentJestCoverage = await getCurrentBranchJestCoverage(transformedGitFiles);
     const baseJestCoverage = await getBaseBranchJestCoverage(transformedGitFiles);
     const jestCoverageDiff = mergeJestCoverage(currentJestCoverage, baseJestCoverage);
     saveCoverageDiff(jestCoverageDiff);
-    const message = coverageMessage(transformedGitFiles, jestCoverageDiff);
-    if (message) {
-      await addNewSingletonComment(message, '`Action:JestCoverage`');
-    }
+    commentMessage = coverageMessage(transformedGitFiles, jestCoverageDiff);
   } catch (_err) {
-    const commentMessage = parseError(_err);
-    addNewSingletonComment(commentMessage, '`Action:JestCoverage`');
+    commentMessage = parseErrorMessage(_err);
+    process.exit(1);
+  }
+  console.debug({ commentMessage });
+  await addNewSingletonComment(commentMessage, '`Action:JestCoverage`');
+  if (globalState.get('passed')) {
+    process.exit(0);
+  } else {
     process.exit(1);
   }
 };
