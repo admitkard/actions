@@ -191,7 +191,9 @@ const getCoverage = async () => {
       testSuite: err.indexOf('Test Suites: '),
       time: err.indexOf('Time:    '),
       timeEnd: err.indexOf(' s'),
-      testSummary: `""${err.slice(err.indexOf('Test Suites: '), err.indexOf('Time:') + 20 )}""`,
+      testSummary: `""${err.slice(err.indexOf('Test Suites: '), err.indexOf('Time:') + 50)}""`,
+      testSummary2: err.slice(err.indexOf('Test Suites: '), err.indexOf('Time:') + 50).split('\n'),
+      testSummary3: err.slice(err.indexOf('Test Suites: '), err.indexOf('Time:') + 50).split('\\n'),
     });
     console.log({ testSummary });
     process.exit(1);
