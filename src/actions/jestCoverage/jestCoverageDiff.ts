@@ -10,7 +10,6 @@ import { convertCoverageToReportCell } from './jestReportUtils'; 4
 import k from 'kleur';
 import stripAnsi from 'strip-ansi';
 
-let passed = true;
 interface FileDetails {
   status?: string;
   fileName?: string;
