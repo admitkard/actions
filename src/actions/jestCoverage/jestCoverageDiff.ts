@@ -191,7 +191,7 @@ const getCoverage = async () => {
       let testSummary = testSummaryMatch[1];
       testSummary.replace(/^\s+/gm, '');
       testSummary.replace(/(\d+ failed)/g, '**$1**');
-      console.log(testSummary[1]);
+      console.log(testSummary);
     }
     process.exit(1);
   }
