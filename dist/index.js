@@ -7489,7 +7489,9 @@ const coverageMessage = (transformedGitFiles, jestCoverageDiff) => {
     return message;
 };
 const parseErrorMessage = (_err) => {
+    console.info('Parsing error message');
     let commentMessage = `Status: 🔴 An unknown failure occurred. Please check the test run.`;
+    console.debug({ commentMessage });
     const err = (0, strip_ansi_1.default)(_err).replace(/\\n/gim, '\n');
     const testSummaryRegex = /(Test Suites:(?:.*\n)+.*Time:\s+[\d.]+ s)/gm;
     const testSummaryMatch = testSummaryRegex.exec(err);
