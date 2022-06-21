@@ -9,6 +9,7 @@ import { getNpmRunnerCommand, isMonorepo } from '../../utils/repo';
 import { convertCoverageToReportCell } from './jestReportUtils'; 4
 import k from 'kleur';
 import stripAnsi from 'strip-ansi';
+import test from 'node:test';
 
 let passed = true;
 interface FileDetails {
@@ -187,6 +188,7 @@ const getCoverage = async () => {
     const err = stripAnsi(_err).replace(/\\n/gim, '\n');
     const testSummaryRegex = /(Test Suites:(?:.*\n)+.*Time:\s+[\d.]+ s)/gm;
     const testSummaryMatch = testSummaryRegex.exec(err);
+    console.log({ testSummaryMatch });
     if (testSummaryMatch) {
       let testSummary = testSummaryMatch[1];
       testSummary.replace(/^\s+/gm, '');
