@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // tslint:disable: no-console
-import { runner, truncateString } from '../../utils';
+import { globalState, runner, truncateString } from '../../utils';
 import { addCommentOnPR, addNewSingletonComment, createMarkdownTable, getFileStatusIcon } from '../../utils/github';
 import { git, GitChangedFile } from '../../utils/git';
 import { BASE_BRANCH, FILE_NAME_LIMIT, MIN_COVERAGE } from './jestConstants';
@@ -159,13 +159,30 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
 const coverageMessage = (transformedGitFiles: FileDetails[], jestCoverageDiff: Record<string, JestCoverageDiff>) => {
   const tableMd = convertDiffToMarkdownTable(transformedGitFiles, jestCoverageDiff);
   const additionalInfoBefore = [];
-  additionalInfoBefore.push(`Status: ${passed ? '🟢 Well Done' : '🔴'}`);
+  additionalInfoBefore.push(`Status: ${globalState.get('passed') ? '🟢 Well Done' : '🔴 Some failures are reported'}`);
+  if (globalState.get('failureReason')) {
+    additionalInfoBefore.push(`Failure Reasons:\n${globalState.get('failureReason')}`);
+  }
   const additionalInfoAfter = [];
   const message = `${additionalInfoBefore.join('\n')}\n\n${tableMd}\n\n${additionalInfoAfter.join('\n')}`;
   console.group('Jest coverage-diff message');
   console.debug(message);
   console.groupEnd();
   return message;
+}
+
+const parseError = (_err: string) => {
+  let commentMessage = `Status: 🔴 An unknown failure occurred. Please check the test run.`;
+  const err = stripAnsi(_err).replace(/\\n/gim, '\n');
+  const testSummaryRegex = /(Test Suites:(?:.*\n)+.*Time:\s+[\d.]+ s)/gm;
+  const testSummaryMatch = testSummaryRegex.exec(err);
+  if (testSummaryMatch) {
+    let testSummary = testSummaryMatch[1];
+    testSummary.replace(/^\s+/gm, '');
+    testSummary.replace(/(\d+ failed)/g, '**$1**');
+    commentMessage = `Status: 🔴 Some failures are reported\n${testSummary}`;
+  }
+  return commentMessage;
 }
 
 const getCoverage = async () => {
@@ -184,16 +201,8 @@ const getCoverage = async () => {
       await addNewSingletonComment(message, '`Action:JestCoverage`');
     }
   } catch (_err) {
-    const err = stripAnsi(_err).replace(/\\n/gim, '\n');
-    const testSummaryRegex = /(Test Suites:(?:.*\n)+.*Time:\s+[\d.]+ s)/gm;
-    const testSummaryMatch = testSummaryRegex.exec(err);
-    console.log({ testSummaryMatch });
-    if (testSummaryMatch) {
-      let testSummary = testSummaryMatch[1];
-      testSummary.replace(/^\s+/gm, '');
-      testSummary.replace(/(\d+ failed)/g, '**$1**');
-      console.log(testSummary);
-    }
+    const commentMessage = parseError(_err);
+    addNewSingletonComment(commentMessage, '`Action:JestCoverage`');
     process.exit(1);
   }
 };

@@ -1,17 +1,21 @@
+import { globalState } from '../../utils';
 import { JestItemDiff } from './jestUtils';
 
 export const convertCoverageToReportCell = (data: JestItemDiff, minCoverage: number, status: string) => {
-  let passed = false;
+  let passed = true;
+  let failureReason = globalState.get('failureReason');
   let cell = '';
   let indicatorAdded = false;
   if (!indicatorAdded && status === 'A' && (data.pct.current < minCoverage)) { // New file no coverage
     cell += '<b title="No test coverage for new file">🚨 </b>';
     passed = false;
+    failureReason += '- No test coverage for new file.\n';
     indicatorAdded = true;
   }
   if (!indicatorAdded && data.pct.current < data.pct.base) { // Coverage reduced
     cell += '<b title="Coverage is reduced">🔴 </b>';
     passed = false;
+    failureReason += '- Coverage is reduced.\n';
     indicatorAdded = true;
   }
   if (!indicatorAdded && data.pct.current >= data.pct.base && data.pct.current < minCoverage) { // Coverage less than threshbase
@@ -28,6 +32,6 @@ export const convertCoverageToReportCell = (data: JestItemDiff, minCoverage: num
     cell += data.covered.base ? `<i title="${data.pct.base} (${data.covered.base}/${data.total.base})">_${Math.floor(data.pct.base)}%_</i>` : 'NA';
   }
 
-  console.log(passed);
+  globalState.set({ passed, failureReason });
   return cell;
 };
