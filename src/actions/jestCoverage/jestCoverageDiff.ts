@@ -185,7 +185,7 @@ const getCoverage = async () => {
     }
   } catch (_err) {
     const err = stripAnsi(_err).replace(/\\n/gim, '\n');
-    const testSummaryRegex = /(Test Suites:(?:.*\\n)+.*Time:\s+[\d.]+ s)/gm;
+    const testSummaryRegex = /(Test Suites:(?:.*\n)+.*Time:\s+[\d.]+ s)/gm;
     const testSummary = testSummaryRegex.exec(err);
     console.log({
       testSuite: err.indexOf('Test Suites: '),
@@ -194,7 +194,7 @@ const getCoverage = async () => {
       testSummary: `""${err.slice(err.indexOf('Test Suites: '), err.indexOf('Time:') + 50)}""`,
       testSummary2: err.slice(err.indexOf('Test Suites: '), err.indexOf('Time:') + 50).split('\n'),
       testSummary3: err.slice(err.indexOf('Test Suites: '), err.indexOf('Time:') + 50).split('\\n'),
-    });
+    }); 
     console.log({ testSummary });
     process.exit(1);
   }
