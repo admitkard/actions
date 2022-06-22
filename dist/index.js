@@ -8043,7 +8043,7 @@ exports.getJsonFile = getJsonFile;
 const getNpmRunner = () => {
     const hasPackageLock = (0, fs_1.existsSync)(path_1.default.join(__pwd, 'package-lock.json'));
     if (hasPackageLock) {
-        return 'npm run';
+        return 'npm';
     }
     return 'yarn';
 };
