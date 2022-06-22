@@ -7498,8 +7498,8 @@ const parseErrorMessage = (_err) => {
     if (testSummaryMatch) {
         let testSummary = testSummaryMatch[1];
         testSummary.replace(/^\s+/gm, '');
-        testSummary.replace(/(\d+ failed)/g, '**$1**');
-        commentMessage = `Status: 🔴 Some failures are reported\n${testSummary}`;
+        testSummary.replace(/(\d+ failed)/gm, '**$1**');
+        commentMessage = `Status: 🔴 Some failures are reported\n> ${testSummary}`;
     }
     return commentMessage;
 };
@@ -7887,7 +7887,7 @@ const addCommentOnPR = (message, identifier) => {
     const octokit = github.getOctokit(token);
     const context = github.context;
     const prId = context.payload.pull_request.number;
-    const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n' + `_${identifier}_` }));
+    const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n\n' + `_${identifier}_` }));
     return newComment;
 };
 exports.addCommentOnPR = addCommentOnPR;
