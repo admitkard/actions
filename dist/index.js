@@ -7639,7 +7639,10 @@ const getJestCoverageFile = () => {
 };
 const getJestCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     yield clearJestCache();
-    const jestCoverageCommand = (0, utils_1.runner)((0, repo_1.getNpmRunnerCommand)('test --coverage'));
+    const coverageReporters = ['json', 'text', 'json-summary'].map((r) => `--coverageReporters=${r}`).join(' ');
+    const reporters = ['default', 'github-reporter'].map((r) => `--reporters=${r}`).join(' ');
+    const jestOptions = `${reporters} ${coverageReporters}`;
+    const jestCoverageCommand = (0, utils_1.runner)((0, repo_1.getNpmRunnerCommand)(`test --coverage ${jestOptions}`));
     return jestCoverageCommand.then(() => {
         const coverage = getJestCoverageFile();
         const transformedCoverage = {};
