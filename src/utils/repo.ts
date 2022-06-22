@@ -49,17 +49,17 @@ const NPM_COMMAND_MAPPER = {
 const YARN_COMMAND_MAPPER = {
   'install': 'install --frozen-lockfile',
 }
-export const getNpmRunnerCommand = (command: string) => {
+export const getNpmRunnerCommand = (command: string, args?: string[]) => {
   const commandParts = command.split(' ');
   const npmCommand = commandParts[0];
   const npmRunner = getNpmRunner();
   if (npmRunner === 'yarn') {
     const finalCommand = YARN_COMMAND_MAPPER[command] || command;
-    return `${npmRunner} ${finalCommand}`;
+    return `${npmRunner} ${finalCommand} ${args}`;
   }
   if (NPM_RESERVED_COMMANDS.includes(npmCommand)) {
     const finalCommand = NPM_COMMAND_MAPPER[command] || command;
-    return `${npmRunner} ${finalCommand}`;
+    return `${npmRunner} ${finalCommand} -- ${args}`;
   }
-  return `${npmRunner} run ${command}`;
+  return `${npmRunner} run ${command} -- ${args}`;
 };
