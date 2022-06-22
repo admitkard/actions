@@ -35,7 +35,7 @@ export const getJsonFile = (filePath: string) => {
 export const getNpmRunner = () => {
   const hasPackageLock = existsSync(path.join(__pwd, 'package-lock.json'));
   if (hasPackageLock) {
-    return 'npm run';
+    return 'npm';
   }
   return 'yarn';
 }
