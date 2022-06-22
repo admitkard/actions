@@ -55,7 +55,7 @@ const getChangedFiles = () => {
   const filteredChangedFiles = git.changedFiles.filter((changedFile) => !isFileDisallowed(changedFile.fileName));
   console.debug({changedFiles: git.changedFiles, filteredChangedFiles});
   if (filteredChangedFiles.length === 0) {
-    addCommentOnPR(`No testable files found in the PR.`, '`Action:JestCoverage`')
+    addNewSingletonComment(`No testable files found in the PR.`, 'Action:JestCoverage')
     process.exit(0);
   }
   return filteredChangedFiles;
@@ -204,7 +204,7 @@ const getCoverage = async () => {
     commentMessage = parseErrorMessage(_err);
   }
   console.debug({ commentMessage });
-  await addNewSingletonComment(commentMessage, '`Action:JestCoverage`');
+  await addNewSingletonComment(commentMessage, 'Action:JestCoverage');
   if (globalState.get('passed')) {
     process.exit(0);
   } else {
