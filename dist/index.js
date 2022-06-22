@@ -7520,7 +7520,6 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
     }
     catch (_err) {
         commentMessage = parseErrorMessage(_err);
-        process.exit(1);
     }
     console.debug({ commentMessage });
     yield (0, github_1.addNewSingletonComment)(commentMessage, '`Action:JestCoverage`');
