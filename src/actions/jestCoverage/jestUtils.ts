@@ -70,7 +70,7 @@ export const getJestCoverage = async () => {
   const coverageReporters = ['json', 'text', 'json-summary'].map((r) => `--coverageReporters=${r}`).join(' ');
   const reporters = ['default', 'github-actions'].map((r) => `--reporters=${r}`).join(' ');
   const jestOptions = `${reporters} ${coverageReporters}`;
-  const jestCoverageCommand = runner(getNpmRunnerCommand('test', `--coverage ${jestOptions}`));
+  const jestCoverageCommand = runner(getNpmRunnerCommand('test', '--coverage', jestOptions));
   return jestCoverageCommand.then(() => {
     const coverage = getJestCoverageFile();
     const transformedCoverage: Record<string, JestCoverageSummary> = {};
