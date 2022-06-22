@@ -180,8 +180,8 @@ const parseErrorMessage = (_err: string) => {
   if (testSummaryMatch) {
     let testSummary = testSummaryMatch[1];
     testSummary.replace(/^\s+/gm, '');
-    testSummary.replace(/(\d+ failed)/g, '**$1**');
-    commentMessage = `Status: 🔴 Some failures are reported\n${testSummary}`;
+    testSummary.replace(/(\d+ failed)/gm, '**$1**');
+    commentMessage = `Status: 🔴 Some failures are reported\n> ${testSummary}`;
   }
   return commentMessage;
 }
