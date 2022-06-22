@@ -61,4 +61,5 @@ Status: 🟢 Well Done
 | <b title="Modified">🟨</b> | odyssey/...VisaApplications/EditVisaApplication.tsx | 🟢 <b title="94.44 (17/18)">**94%**</b>←<i title="94.44 (17/18)">_94%_</i> | 🟢 <b title="72.22 (13/18)">**72%**</b>←<i title="72.22 (13/18)">_72%_</i> | 🟢 <b title="95.23 (20/21)">**95%**</b>←<i title="95.23 (20/21)">_95%_</i> |
 
 - Annotates failed tests
+
 ![](https://aws1.discourse-cdn.com/github/optimized/2X/f/fc706d492f8e7c6e328e17d0eb412b89eb120d54_2_690x390.png)
