@@ -13,11 +13,11 @@ export const isFileDisallowed = (fileName: string) => {
   return disallowedFilesRegex.test(fileName);
 }
 
-let COVERAGE_DIR = '';
+let COVERAGE_DIR = 'coverage';
 const getJestCoverageDir = () => {
   if (!COVERAGE_DIR) {
     const jestConfig = __non_webpack_require__(path.resolve(__pwd, 'jest.config.js'));
-    COVERAGE_DIR = jestConfig.coverageDirectory;
+    COVERAGE_DIR = jestConfig.coverageDirectory || COVERAGE_DIR;
   }
   return COVERAGE_DIR;
 }
@@ -68,7 +68,7 @@ const getJestCoverageFile = () => {
 export const getJestCoverage = async () => {
   await clearJestCache();
   const coverageReporters = ['json', 'text', 'json-summary'].map((r) => `--coverageReporters=${r}`).join(' ');
-  const reporters = ['default', 'github-reporter'].map((r) => `--reporters=${r}`).join(' ');
+  const reporters = ['default', 'github-actions'].map((r) => `--reporters=${r}`).join(' ');
   const jestOptions = `${reporters} ${coverageReporters}`;
   const jestCoverageCommand = runner(getNpmRunnerCommand(`test --coverage ${jestOptions}`));
   return jestCoverageCommand.then(() => {
