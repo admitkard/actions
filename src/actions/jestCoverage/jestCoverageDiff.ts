@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // tslint:disable: no-console
 import { globalState, runner, truncateString } from '../../utils';
-import { addCommentOnPR, addNewSingletonComment, createMarkdownTable, getFileStatusIcon } from '../../utils/github';
+import { addOrRenewCommentOnPR, createMarkdownTable, getFileStatusIcon } from '../../utils/github';
 import { git, GitChangedFile } from '../../utils/git';
 import { BASE_BRANCH, FILE_NAME_LIMIT, MIN_COVERAGE } from './jestConstants';
 import { getJestCoverage, isFileDisallowed, JestCoverageDiff, JestCoverageSummary, saveCoverageDiff } from './jestUtils';
@@ -55,7 +55,7 @@ const getChangedFiles = () => {
   const filteredChangedFiles = git.changedFiles.filter((changedFile) => !isFileDisallowed(changedFile.fileName));
   console.debug({changedFiles: git.changedFiles, filteredChangedFiles});
   if (filteredChangedFiles.length === 0) {
-    addNewSingletonComment(`No testable files found in the PR.`, 'Action:JestCoverage')
+    addOrRenewCommentOnPR(`No testable files found in the PR.`, 'Action:JestCoverage')
     process.exit(0);
   }
   return filteredChangedFiles;
@@ -204,7 +204,7 @@ const getCoverage = async () => {
     commentMessage = parseErrorMessage(_err);
   }
   console.debug({ commentMessage });
-  await addNewSingletonComment(commentMessage, 'Action:JestCoverage');
+  await addOrRenewCommentOnPR(commentMessage, 'Action:JestCoverage');
   if (globalState.get('passed')) {
     process.exit(0);
   } else {
