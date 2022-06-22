@@ -7628,7 +7628,7 @@ systemCheck_1.systemCheck.addSystemCheck('checkTestCommandInPackageJson', () => 
     return '';
 });
 const clearJestCache = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    yield (0, utils_1.runner)((0, repo_1.getNpmRunnerCommand)('test --clearCache'));
+    yield (0, utils_1.runner)((0, repo_1.getNpmRunnerCommand)('test', '--clearCache'));
     yield (0, utils_1.runner)('rm -rf /tmp/jest*');
     yield (0, utils_1.runner)('rm -rf coverage');
 });
@@ -7642,7 +7642,7 @@ const getJestCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function
     const coverageReporters = ['json', 'text', 'json-summary'].map((r) => `--coverageReporters=${r}`).join(' ');
     const reporters = ['default', 'github-actions'].map((r) => `--reporters=${r}`).join(' ');
     const jestOptions = `${reporters} ${coverageReporters}`;
-    const jestCoverageCommand = (0, utils_1.runner)((0, repo_1.getNpmRunnerCommand)(`test --coverage ${jestOptions}`));
+    const jestCoverageCommand = (0, utils_1.runner)((0, repo_1.getNpmRunnerCommand)('test', '--coverage', jestOptions));
     return jestCoverageCommand.then(() => {
         const coverage = getJestCoverageFile();
         const transformedCoverage = {};
@@ -8055,19 +8055,19 @@ const NPM_COMMAND_MAPPER = {
 const YARN_COMMAND_MAPPER = {
     'install': 'install --frozen-lockfile',
 };
-const getNpmRunnerCommand = (command) => {
+const getNpmRunnerCommand = (command, ...args) => {
     const commandParts = command.split(' ');
     const npmCommand = commandParts[0];
     const npmRunner = (0, exports.getNpmRunner)();
     if (npmRunner === 'yarn') {
         const finalCommand = YARN_COMMAND_MAPPER[command] || command;
-        return `${npmRunner} ${finalCommand}`;
+        return `${npmRunner} ${finalCommand} ${(args || []).join(' ')}`;
     }
     if (NPM_RESERVED_COMMANDS.includes(npmCommand)) {
         const finalCommand = NPM_COMMAND_MAPPER[command] || command;
-        return `${npmRunner} ${finalCommand}`;
+        return `${npmRunner} ${finalCommand} -- ${(args || []).join(' ')}`;
     }
-    return `${npmRunner} run ${command}`;
+    return `${npmRunner} run ${command} -- ${(args || []).join(' ')}`;
 };
 exports.getNpmRunnerCommand = getNpmRunnerCommand;
 
