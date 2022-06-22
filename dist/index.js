@@ -7389,7 +7389,7 @@ const getChangedFiles = () => {
     const filteredChangedFiles = git_1.git.changedFiles.filter((changedFile) => !(0, jestUtils_1.isFileDisallowed)(changedFile.fileName));
     console.debug({ changedFiles: git_1.git.changedFiles, filteredChangedFiles });
     if (filteredChangedFiles.length === 0) {
-        (0, github_1.addCommentOnPR)(`No testable files found in the PR.`, '`Action:JestCoverage`');
+        (0, github_1.addOrRenewCommentOnPR)(`No testable files found in the PR.`, 'Action:JestCoverage');
         process.exit(0);
     }
     return filteredChangedFiles;
@@ -7522,7 +7522,7 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
         commentMessage = parseErrorMessage(_err);
     }
     console.debug({ commentMessage });
-    yield (0, github_1.addNewSingletonComment)(commentMessage, '`Action:JestCoverage`');
+    yield (0, github_1.addOrRenewCommentOnPR)(commentMessage, 'Action:JestCoverage');
     if (utils_1.globalState.get('passed')) {
         process.exit(0);
     }
@@ -7890,7 +7890,7 @@ const addCommentOnPR = (message, identifier) => {
     const octokit = github.getOctokit(token);
     const context = github.context;
     const prId = context.payload.pull_request.number;
-    const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n\n' + `_${identifier}_` }));
+    const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n\n' + `_\`${identifier}\`_` }));
     return newComment;
 };
 exports.addCommentOnPR = addCommentOnPR;
