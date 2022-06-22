@@ -202,7 +202,6 @@ const getCoverage = async () => {
     commentMessage = coverageMessage(transformedGitFiles, jestCoverageDiff);
   } catch (_err) {
     commentMessage = parseErrorMessage(_err);
-    process.exit(1);
   }
   console.debug({ commentMessage });
   await addNewSingletonComment(commentMessage, '`Action:JestCoverage`');
