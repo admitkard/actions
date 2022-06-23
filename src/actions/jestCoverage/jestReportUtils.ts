@@ -2,7 +2,7 @@ import { globalState } from '../../utils';
 import { JestItemDiff } from './jestUtils';
 
 export const convertCoverageToReportCell = (data: JestItemDiff, minCoverage: number, status: string) => {
-  let passed = true;
+  let passed = globalState.get('passed');
   let failureReason = globalState.get('failureReason');
   let cell = '';
   let indicatorAdded = false;
