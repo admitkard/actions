@@ -7565,6 +7565,7 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
         commentMessage = coverageMessage(gitChangedFiles, jestCoverageDiff);
     }
     catch (err) {
+        console.debug('An error occurred in getCoverage, setting passed false');
         utils_1.globalState.set({ passed: false });
         commentMessage = parseErrorMessage(err);
     }
@@ -7622,6 +7623,9 @@ const convertCoverageToReportCell = (data, minCoverage, status) => {
     if (status !== 'A') {
         cell += '←';
         cell += data.covered.base ? `<i title="${data.pct.base} (${data.covered.base}/${data.total.base})">_${Math.floor(data.pct.base)}%_</i>` : 'NA';
+    }
+    if (!passed) {
+        console.debug(`Coverage failure, setting passed as false. [${failureReason}]`);
     }
     utils_1.globalState.set({ passed, failureReason });
     return cell;
