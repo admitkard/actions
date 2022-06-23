@@ -227,6 +227,7 @@ const parseErrorMessage = (_err: string) => {
   console.info('Parsing error message');
   let commentMessage = `Status: 🔴 An unknown failure occurred. Please check the test run.`;
   console.debug({ commentMessage });
+  console.debug({ _err });
   const err = stripAnsi(_err).replace(/\\n/gim, '\n');
   const testSummaryRegex = /(Test Suites:(?:.*\n)+.*Time:\s+[\d.]+ s)/gm;
   const testSummaryMatch = testSummaryRegex.exec(err);
