@@ -7497,7 +7497,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
         table.addRow({
             status: (0, github_1.getFileStatusIcon)(gitFile.status),
             file: fileDisplayName,
-            functions: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.lines, jestConstants_1.MIN_COVERAGE.functions, gitFile.status),
+            functions: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.functions, jestConstants_1.MIN_COVERAGE.functions, gitFile.status),
             branches: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.branches, jestConstants_1.MIN_COVERAGE.branches, gitFile.status),
             statements: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.statements, jestConstants_1.MIN_COVERAGE.statements, gitFile.status),
         });
@@ -7514,12 +7514,13 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
         table.addRow({
             status: (0, github_1.getFileStatusIcon)(gitFile.status),
             file: fileDisplayName,
-            functions: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.lines, jestConstants_1.MIN_COVERAGE.functions, gitFile.status),
+            functions: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.functions, jestConstants_1.MIN_COVERAGE.functions, gitFile.status),
             branches: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.branches, jestConstants_1.MIN_COVERAGE.branches, gitFile.status),
             statements: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.statements, jestConstants_1.MIN_COVERAGE.statements, gitFile.status),
         });
     });
     const tableMd = table.toString();
+    console.debug({ tableMd });
     return tableMd;
 };
 const coverageMessage = (transformedGitFiles, jestCoverageDiff) => {
