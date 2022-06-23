@@ -7441,17 +7441,18 @@ const getFilesWithChangedCoverage = (currentFilesCoverage, baseFilesCoverage) =>
     Object.keys(currentFilesCoverage).forEach((fileName) => {
         const currentCoverage = currentFilesCoverage[fileName];
         const baseCoverage = baseFilesCoverage[fileName];
-        let hasDiff = false;
-        if ((currentCoverage.lines.pct !== baseCoverage.lines.pct) ||
-            (currentCoverage.branches.pct !== baseCoverage.branches.pct) ||
-            (currentCoverage.functions.pct !== baseCoverage.functions.pct) ||
-            (currentCoverage.statements.pct !== baseCoverage.statements.pct)) {
-            hasDiff = true;
+        let hasDiff = true;
+        if ((currentCoverage && baseCoverage) && ((currentCoverage.lines.pct === baseCoverage.lines.pct) &&
+            (currentCoverage.branches.pct === baseCoverage.branches.pct) &&
+            (currentCoverage.functions.pct === baseCoverage.functions.pct) &&
+            (currentCoverage.statements.pct === baseCoverage.statements.pct))) {
+            hasDiff = false;
         }
         if (hasDiff) {
             changedFiles.push(fileName);
         }
     });
+    console.debug({ finalChangedFiles: changedFiles });
     return changedFiles;
 };
 const getMetricCoverageDiff = (currentCoverage, baseCoverage, metricName) => {
@@ -7478,6 +7479,7 @@ const mergeJestCoverage = (currentJestCoverage, baseJestCoverage) => {
             statements: getMetricCoverageDiff(currentCoverage, baseCoverage, 'statements'),
         };
     });
+    console.debug({ fileCoverage });
     console.groupEnd();
     return fileCoverage;
 };
