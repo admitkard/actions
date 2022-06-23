@@ -7496,7 +7496,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
         try {
             table.addRow({
                 status: (0, github_1.getFileStatusIcon)(gitFile.status),
-                file: fileDisplayName,
+                file: `<span title="${gitFile.fileName}">${fileDisplayName}</span>`,
                 functions: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.functions, coverageDiff.functions),
                 branches: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.branches, coverageDiff.branches),
                 statements: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.statements, coverageDiff.statements),
@@ -7521,7 +7521,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
         try {
             table.addRow({
                 status: (0, github_1.getFileStatusIcon)(gitFile.status),
-                file: fileDisplayName,
+                file: `<span title="${gitFile.fileName}">${fileDisplayName}</span>`,
                 functions: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.functions, coverageDiff.functions),
                 branches: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.branches, coverageDiff.branches),
                 statements: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.statements, coverageDiff.statements),
@@ -7636,6 +7636,16 @@ const convertCoverageToReportCell = (status, minCoverage, data) => {
         if (!indicatorAdded && data.pct.current >= data.pct.base) { // Coverage improved
             cell += '🟢 ';
             indicatorAdded = true;
+        }
+        if (!indicatorAdded && !data.pct.base) { // No Base Coverage improved
+            if (data.pct.current >= minCoverage) {
+                cell += '🟢 ';
+                indicatorAdded = true;
+            }
+            if (data.pct.current < minCoverage) {
+                cell += '🔴 ';
+                indicatorAdded = true;
+            }
         }
         cell += data.pct.current ? `<b title="${data.pct.current} (${data.covered.current}/${data.total.current})">**${Math.floor(data.pct.current)}%**</b>` : 'NA';
         if (status !== 'A') {
@@ -7923,16 +7933,19 @@ const core = tslib_1.__importStar(__webpack_require__(2225));
 const github = tslib_1.__importStar(__webpack_require__(8142));
 const getFileStatusIcon = (status = '') => {
     if (status === 'A') {
-        return '<b title="Added">🟩</b>';
+        return '<b title="Added"><img height="12px" src="https://cdn.pixabay.com/photo/2014/04/02/10/55/plus-304947_1280.png" alt="🟩"/></b>';
     }
     if (status === 'M') {
-        return '<b title="Modified">🟨</b>';
+        return '<b title="Modified"><img height="12px" src="https://icons-for-free.com/download-icon-refresh+reload+sync+update+icon-1320137054460780608_512.png"/>🟨</b>';
     }
     if (status === 'D') {
-        return '<b title="Deleted">🟥</b>';
+        return '<b title="Deleted"><img height="12px" src="https://www.pngall.com/wp-content/uploads/5/Red-Minus-PNG-High-Quality-Image.png" alt="🟥"/></b>';
     }
     if (status.indexOf('R') === 0) {
-        return '<b title="Renamed">🟫</b>';
+        return '<b title="Renamed">𝖨a</b>';
+    }
+    if (status === 'U') {
+        return '<b title="UnModified">🔳</b>';
     }
     return status;
 };
