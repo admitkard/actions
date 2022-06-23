@@ -7340,7 +7340,7 @@ exports.DISALLOWED_FILES = [
 //#!/usr/bin/env node
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.main = void 0;
+exports.main = exports.getJestChangedFilesCoverage = void 0;
 const tslib_1 = __webpack_require__(655);
 // tslint:disable: no-console
 const utils_1 = __webpack_require__(5928);
@@ -7385,17 +7385,20 @@ const fetchRequiredBranches = () => tslib_1.__awaiter(void 0, void 0, void 0, fu
     // await runner(`git fetch --no-tags --depth=0 origin ${git.head}`);
     yield (0, utils_1.runner)(`git switch ${git_1.git.head}`);
 });
+const transformGitFiles = (changedFiles) => {
+    return changedFiles.map((changedFile) => (Object.assign(Object.assign({}, changedFile), getFileDisplayName(changedFile.fileName))));
+};
 const getChangedFiles = () => {
-    const filteredChangedFiles = git_1.git.changedFiles.filter((changedFile) => !(0, jestUtils_1.isFileDisallowed)(changedFile.fileName));
-    console.debug({ changedFiles: git_1.git.changedFiles, filteredChangedFiles });
-    if (filteredChangedFiles.length === 0) {
+    console.group('Changed Files');
+    const filteredGitFiles = git_1.git.changedFiles.filter((changedFile) => !(0, jestUtils_1.isFileDisallowed)(changedFile.fileName));
+    console.debug({ changedFiles: git_1.git.changedFiles, filteredChangedFiles: filteredGitFiles });
+    if (filteredGitFiles.length === 0) {
         (0, github_1.addOrRenewCommentOnPR)(`No testable files found in the PR.`, 'Action:JestCoverage');
         process.exit(0);
     }
-    return filteredChangedFiles;
-};
-const transformGitFiles = (changedFiles) => {
-    return changedFiles.map((changedFile) => (Object.assign(Object.assign({}, changedFile), getFileDisplayName(changedFile.fileName))));
+    const transformedGitFiles = transformGitFiles(filteredGitFiles);
+    console.groupEnd();
+    return transformedGitFiles;
 };
 const getJestChangedFilesCoverage = (changedFiles) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     yield (0, utils_1.runner)((0, repo_1.getNpmRunnerCommand)('install'));
@@ -7408,24 +7411,49 @@ const getJestChangedFilesCoverage = (changedFiles) => tslib_1.__awaiter(void 0, 
     console.debug({ fileCoverages });
     return fileCoverages;
 });
-const getCurrentBranchJestCoverage = (changedFiles) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+exports.getJestChangedFilesCoverage = getJestChangedFilesCoverage;
+const getJestFilesCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+    yield (0, utils_1.runner)((0, repo_1.getNpmRunnerCommand)('install'));
+    const coverage = yield (0, jestUtils_1.getJestCoverage)();
+    console.debug({ coverage });
+    return coverage;
+});
+const getCurrentBranchJestCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     console.group('Jest coverage of current branch');
     console.debug(kleur_1.default.blue('Getting jest coverage of current branch...'));
-    const fileCoverages = yield getJestChangedFilesCoverage(changedFiles);
+    const fileCoverages = yield getJestFilesCoverage();
     console.info(kleur_1.default.blue('Jest coverage done for current branch.'));
     console.groupEnd();
     return fileCoverages;
 });
-const getBaseBranchJestCoverage = (changedFiles) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
+const getBaseBranchJestCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     console.group('Jest coverage of base branch');
     console.debug(kleur_1.default.blue('Getting jest coverage of base branch...'));
     git_1.git.checkout(jestConstants_1.BASE_BRANCH);
-    const fileCoverages = yield getJestChangedFilesCoverage(changedFiles);
+    const fileCoverages = yield getJestFilesCoverage();
     git_1.git.checkout(git_1.git.head);
     console.info(kleur_1.default.blue('Jest coverage done for base branch.'));
     console.groupEnd();
     return fileCoverages;
 });
+const getFilesWithChangedCoverage = (currentFilesCoverage, baseFilesCoverage) => {
+    const changedFiles = [];
+    Object.keys(currentFilesCoverage).forEach((fileName) => {
+        const currentCoverage = currentFilesCoverage[fileName];
+        const baseCoverage = baseFilesCoverage[fileName];
+        let hasDiff = false;
+        if ((currentCoverage.lines.pct !== baseCoverage.lines.pct) ||
+            (currentCoverage.branches.pct !== baseCoverage.branches.pct) ||
+            (currentCoverage.functions.pct !== baseCoverage.functions.pct) ||
+            (currentCoverage.statements.pct !== baseCoverage.statements.pct)) {
+            hasDiff = true;
+        }
+        if (hasDiff) {
+            changedFiles.push(fileName);
+        }
+    });
+    return changedFiles;
+};
 const getMetricCoverageDiff = (currentCoverage, baseCoverage, metricName) => {
     const metricDiff = {
         total: { current: currentCoverage && currentCoverage[metricName].total, base: baseCoverage && baseCoverage[metricName].total },
@@ -7439,7 +7467,8 @@ const mergeJestCoverage = (currentJestCoverage, baseJestCoverage) => {
     const fileCoverage = {};
     console.group('Merging jest coverage');
     console.debug({ currentJestCoverage, baseJestCoverage });
-    Object.keys(currentJestCoverage).forEach((fileName) => {
+    const changedFiles = getFilesWithChangedCoverage(currentJestCoverage, baseJestCoverage);
+    changedFiles.forEach((fileName) => {
         const currentCoverage = currentJestCoverage[fileName];
         const baseCoverage = baseJestCoverage[fileName];
         fileCoverage[fileName] = {
@@ -7461,6 +7490,23 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
         statements: 'Statements',
     });
     transformedGitFiles.forEach((gitFile) => {
+        const coverageDiff = jestCoverageDiff[gitFile.fileName];
+        const fileDisplayName = (gitFile.package ? `${gitFile.package}/${gitFile.displayName}` : gitFile.displayName) || gitFile.fileName;
+        table.addRow({
+            status: (0, github_1.getFileStatusIcon)(gitFile.status),
+            file: fileDisplayName,
+            functions: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.lines, jestConstants_1.MIN_COVERAGE.functions, gitFile.status),
+            branches: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.branches, jestConstants_1.MIN_COVERAGE.branches, gitFile.status),
+            statements: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.statements, jestConstants_1.MIN_COVERAGE.statements, gitFile.status),
+        });
+    });
+    const changedCoverageFiles = Object.keys(jestCoverageDiff);
+    const changedCoverageFilesStatus = changedCoverageFiles.map((fileName) => ({ status: 'U', fileName }));
+    const transformedChangedCoverageFiles = transformGitFiles(changedCoverageFilesStatus);
+    transformedChangedCoverageFiles.forEach((gitFile) => {
+        if (transformedGitFiles.find((file) => file.fileName === gitFile.fileName)) {
+            return;
+        }
         const coverageDiff = jestCoverageDiff[gitFile.fileName];
         const fileDisplayName = (gitFile.package ? `${gitFile.package}/${gitFile.displayName}` : gitFile.displayName) || gitFile.fileName;
         table.addRow({
@@ -7507,19 +7553,17 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
     yield fetchRequiredBranches();
     console.group('Changed Files');
     const gitChangedFiles = getChangedFiles();
-    const transformedGitFiles = transformGitFiles(gitChangedFiles);
-    console.groupEnd();
     let commentMessage = '';
     try {
-        utils_1.globalState.set(({ passed: false }));
-        const currentJestCoverage = yield getCurrentBranchJestCoverage(transformedGitFiles);
-        const baseJestCoverage = yield getBaseBranchJestCoverage(transformedGitFiles);
+        const currentJestCoverage = yield getCurrentBranchJestCoverage();
+        const baseJestCoverage = yield getBaseBranchJestCoverage();
         const jestCoverageDiff = mergeJestCoverage(currentJestCoverage, baseJestCoverage);
         (0, jestUtils_1.saveCoverageDiff)(jestCoverageDiff);
-        commentMessage = coverageMessage(transformedGitFiles, jestCoverageDiff);
+        commentMessage = coverageMessage(gitChangedFiles, jestCoverageDiff);
     }
-    catch (_err) {
-        commentMessage = parseErrorMessage(_err);
+    catch (err) {
+        utils_1.globalState.set({ passed: false });
+        commentMessage = parseErrorMessage(err);
     }
     console.debug({ commentMessage });
     yield (0, github_1.addOrRenewCommentOnPR)(commentMessage, 'Action:JestCoverage');
@@ -7547,7 +7591,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.convertCoverageToReportCell = void 0;
 const utils_1 = __webpack_require__(5928);
 const convertCoverageToReportCell = (data, minCoverage, status) => {
-    let passed = true;
+    let passed = utils_1.globalState.get('passed');
     let failureReason = utils_1.globalState.get('failureReason');
     let cell = '';
     let indicatorAdded = false;
@@ -8061,11 +8105,13 @@ const getNpmRunnerCommand = (command, ...args) => {
     const npmRunner = (0, exports.getNpmRunner)();
     if (npmRunner === 'yarn') {
         const finalCommand = YARN_COMMAND_MAPPER[command] || command;
-        return `${npmRunner} ${finalCommand} ${(args || []).join(' ')}`;
+        const argsString = args ? ` ${(args || []).join(' ')}` : '';
+        return `${npmRunner} ${finalCommand}${argsString}`;
     }
     if (NPM_RESERVED_COMMANDS.includes(npmCommand)) {
         const finalCommand = NPM_COMMAND_MAPPER[command] || command;
-        return `${npmRunner} ${finalCommand} -- ${(args || []).join(' ')}`;
+        const argsString = args ? ` -- ${(args || []).join(' ')}` : '';
+        return `${npmRunner} ${finalCommand}${argsString}`;
     }
     return `${npmRunner} run ${command} -- ${(args || []).join(' ')}`;
 };
