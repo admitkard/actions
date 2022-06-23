@@ -7940,7 +7940,7 @@ const getFileStatusIcon = (status = '') => {
         return '<b title="Added"><img height="12px" src="https://cdn.pixabay.com/photo/2014/04/02/10/55/plus-304947_1280.png" alt="🟩"/></b>';
     }
     if (status === 'M') {
-        return '<b title="Modified"><img height="12px" src="https://icons-for-free.com/download-icon-refresh+reload+sync+update+icon-1320137054460780608_512.png"/>🟨</b>';
+        return '<b title="Modified"><img height="12px" src="https://icons-for-free.com/download-icon-refresh+reload+sync+update+icon-1320137054460780608_512.png" alt="🟨"/></b>';
     }
     if (status === 'D') {
         return '<b title="Deleted"><img height="12px" src="https://www.pngall.com/wp-content/uploads/5/Red-Minus-PNG-High-Quality-Image.png" alt="🟥"/></b>';
