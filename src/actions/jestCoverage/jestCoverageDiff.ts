@@ -263,11 +263,13 @@ const getCoverage = async () => {
   }
   console.debug({ commentMessage });
   await addOrRenewCommentOnPR(commentMessage, 'Action:JestCoverage');
-  if (globalState.get('passed')) {
-    process.exit(0);
-  } else {
-    process.exit(1);
+  console.debug({ passed: globalState.get('passed') });
+  let exitCode = 0;
+  if (!globalState.get('passed')) {
+    exitCode = 1;
   }
+  console.debug({ exitCode });
+  process.exit(exitCode);
 };
 
 export const main = () => {
