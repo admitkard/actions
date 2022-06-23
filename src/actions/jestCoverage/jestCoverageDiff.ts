@@ -166,7 +166,6 @@ const mergeJestCoverage = (currentJestCoverage: Record<string, JestCoverageSumma
   return fileCoverage;
 }
 
-
 const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCoverageDiff: Record<string, JestCoverageDiff>) => {
   const table = createMarkdownTable({
     status: '',
@@ -182,7 +181,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
     try {
       table.addRow({
         status: getFileStatusIcon(gitFile.status),
-        file: fileDisplayName,
+        file: `<span title="${gitFile.fileName}">${fileDisplayName}</span>`,
         functions: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.functions, coverageDiff.functions),
         branches: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.branches, coverageDiff.branches),
         statements: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.statements, coverageDiff.statements),
@@ -208,7 +207,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
     try {
       table.addRow({
         status: getFileStatusIcon(gitFile.status),
-        file: fileDisplayName,
+        file: `<span title="${gitFile.fileName}">${fileDisplayName}</span>`,
         functions: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.functions, coverageDiff.functions),
         branches: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.branches, coverageDiff.branches),
         statements: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.statements, coverageDiff.statements),

@@ -27,6 +27,16 @@ export const convertCoverageToReportCell = (status: string, minCoverage: number,
       cell += '🟢 ';
       indicatorAdded = true;
     }
+    if (!indicatorAdded && !data.pct.base) { // No Base Coverage improved
+      if (data.pct.current >= minCoverage) {
+        cell += '🟢 ';
+        indicatorAdded = true;
+      }
+      if (data.pct.current < minCoverage) {
+        cell += '🔴 ';
+        indicatorAdded = true;
+      }
+    }
     cell += data.pct.current ? `<b title="${data.pct.current} (${data.covered.current}/${data.total.current})">**${Math.floor(data.pct.current)}%**</b>` : 'NA';
     if (status !== 'A') {
       cell += '←'
