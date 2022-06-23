@@ -7967,7 +7967,7 @@ const addCommentOnPR = (message, identifier) => {
         const octokit = github.getOctokit(token);
         const context = github.context;
         const prId = context.payload.pull_request.number;
-        const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n\n' + `_\`${identifier}\`_` }));
+        const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n\n' + `\`_${identifier}_\`` }));
         return newComment;
     }
     return Promise.resolve();
