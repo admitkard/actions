@@ -175,6 +175,8 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
     statements: 'Statements',
   });
 
+  console.debug({ transformedGitFiles });
+
   transformedGitFiles.forEach((gitFile) => {
     const coverageDiff = jestCoverageDiff[gitFile.fileName];
     const fileDisplayName = (gitFile.package ? `${gitFile.package}/${gitFile.displayName}` : gitFile.displayName) || gitFile.fileName;
@@ -198,6 +200,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
   const changedCoverageFilesStatus = changedCoverageFiles.map((fileName) => ({ status: 'U', fileName }));
 
   const transformedChangedCoverageFiles = transformGitFiles(changedCoverageFilesStatus);
+  console.debug({ transformedChangedCoverageFiles });
   transformedChangedCoverageFiles.forEach((gitFile) => {
     if (transformedGitFiles.find((file) => file.fileName === gitFile.fileName)) {
       return;
