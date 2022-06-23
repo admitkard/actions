@@ -7705,7 +7705,13 @@ const getJestCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function
 });
 exports.getJestCoverage = getJestCoverage;
 const saveCoverageDiff = (filesStatus) => {
-    (0, fs_1.writeFileSync)(path_1.default.join(__pwd, getJestCoverageDir(), jestConstants_1.COVERAGE_DIFF), JSON.stringify(filesStatus, null, 2));
+    try {
+        (0, fs_1.writeFileSync)(path_1.default.join(__pwd, getJestCoverageDir(), jestConstants_1.COVERAGE_DIFF), JSON.stringify(filesStatus, null, 2));
+        console.debug('Saved coverage diff');
+    }
+    catch (e) {
+        console.error('Unable to save coverage diff', e);
+    }
 };
 exports.saveCoverageDiff = saveCoverageDiff;
 const isReportPassed = () => {
