@@ -183,7 +183,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
     table.addRow({
       status: getFileStatusIcon(gitFile.status),
       file: fileDisplayName,
-      functions: convertCoverageToReportCell(coverageDiff.lines, MIN_COVERAGE.functions, gitFile.status),
+      functions: convertCoverageToReportCell(coverageDiff.functions, MIN_COVERAGE.functions, gitFile.status),
       branches: convertCoverageToReportCell(coverageDiff.branches, MIN_COVERAGE.branches, gitFile.status),
       statements: convertCoverageToReportCell(coverageDiff.statements, MIN_COVERAGE.statements, gitFile.status),
     });
@@ -202,13 +202,14 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
     table.addRow({
       status: getFileStatusIcon(gitFile.status),
       file: fileDisplayName,
-      functions: convertCoverageToReportCell(coverageDiff.lines, MIN_COVERAGE.functions, gitFile.status),
+      functions: convertCoverageToReportCell(coverageDiff.functions, MIN_COVERAGE.functions, gitFile.status),
       branches: convertCoverageToReportCell(coverageDiff.branches, MIN_COVERAGE.branches, gitFile.status),
       statements: convertCoverageToReportCell(coverageDiff.statements, MIN_COVERAGE.statements, gitFile.status),
     });
   });
 
   const tableMd = table.toString();
+  console.debug({ tableMd });
   return tableMd;
 };
 
