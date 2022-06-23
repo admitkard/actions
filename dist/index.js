@@ -7572,12 +7572,13 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
     }
     console.debug({ commentMessage });
     yield (0, github_1.addOrRenewCommentOnPR)(commentMessage, 'Action:JestCoverage');
-    if (utils_1.globalState.get('passed')) {
-        process.exit(0);
+    console.debug({ passed: utils_1.globalState.get('passed') });
+    let exitCode = 0;
+    if (!utils_1.globalState.get('passed')) {
+        exitCode = 1;
     }
-    else {
-        process.exit(1);
-    }
+    console.debug({ exitCode });
+    process.exit(exitCode);
 });
 const main = () => {
     getCoverage();
