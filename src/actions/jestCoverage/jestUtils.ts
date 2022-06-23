@@ -113,7 +113,12 @@ export interface JestCoverageDiff {
 }
 
 export const saveCoverageDiff = (filesStatus) => {
-  writeFileSync(path.join(__pwd, getJestCoverageDir(), COVERAGE_DIFF), JSON.stringify(filesStatus, null, 2));
+  try {
+    writeFileSync(path.join(__pwd, getJestCoverageDir(), COVERAGE_DIFF), JSON.stringify(filesStatus, null, 2));
+    console.debug('Saved coverage diff');
+  } catch (e) {
+    console.error('Unable to save coverage diff', e);
+  }
 };
 
 export const isReportPassed = () => {
