@@ -83,13 +83,13 @@ export const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
       raw = nodeBin(_command);
     }
 
-    console.debug(k.dim(printCommand(command, info)));
+    console.log(k.dim(printCommand(command, info)));
     
     const cmd = Array.isArray(args) ? spawn(raw, args, options) : spawn(raw, options);
 
     cmd.stdout.on('data', (data) => {
       stdout += data;
-      process.stdout.write(`${printCommand(_command, info)}: ${data}`);
+      process.stdout.write(`${printCommand(_command, info)}: ${data}\n`);
       if (info.onStdout) {
         info.onStdout(data);
       }
@@ -104,7 +104,7 @@ export const runner = (command: string, meta: Partial<RunnerMeta> = {}) => {
       }
       const withColor = Array.isArray(args) && args.includes('test') ? command : command;
       if (shouldPrint) {
-        process.stderr.write(withColor);
+        process.stderr.write(`${withColor}\n`);
       }
     });
 

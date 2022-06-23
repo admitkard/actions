@@ -7340,7 +7340,7 @@ exports.DISALLOWED_FILES = [
 //#!/usr/bin/env node
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.main = exports.getJestChangedFilesCoverage = void 0;
+exports.main = exports.parseErrorMessage = exports.getJestChangedFilesCoverage = void 0;
 const tslib_1 = __webpack_require__(655);
 // tslint:disable: no-console
 const utils_1 = __webpack_require__(5928);
@@ -7351,7 +7351,6 @@ const jestUtils_1 = __webpack_require__(1409);
 const repo_1 = __webpack_require__(5557);
 const jestReportUtils_1 = __webpack_require__(2793);
 4;
-const kleur_1 = tslib_1.__importDefault(__webpack_require__(1391));
 const strip_ansi_1 = tslib_1.__importDefault(__webpack_require__(2405));
 const getFileDisplayName = (fileName) => {
     const isRepoMonorepo = (0, repo_1.isMonorepo)();
@@ -7420,19 +7419,19 @@ const getJestFilesCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, fun
 });
 const getCurrentBranchJestCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     console.group('Jest coverage of current branch');
-    console.debug(kleur_1.default.blue('Getting jest coverage of current branch...'));
+    console.debug('Getting jest coverage of current branch...');
     const fileCoverages = yield getJestFilesCoverage();
-    console.info(kleur_1.default.blue('Jest coverage done for current branch.'));
+    console.info('Jest coverage done for current branch.');
     console.groupEnd();
     return fileCoverages;
 });
 const getBaseBranchJestCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     console.group('Jest coverage of base branch');
-    console.debug(kleur_1.default.blue('Getting jest coverage of base branch...'));
+    console.debug('Getting jest coverage of base branch...');
     git_1.git.checkout(jestConstants_1.BASE_BRANCH);
     const fileCoverages = yield getJestFilesCoverage();
     git_1.git.checkout(git_1.git.head);
-    console.info(kleur_1.default.blue('Jest coverage done for base branch.'));
+    console.info('Jest coverage done for base branch.');
     console.groupEnd();
     return fileCoverages;
 });
@@ -7494,13 +7493,21 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
     transformedGitFiles.forEach((gitFile) => {
         const coverageDiff = jestCoverageDiff[gitFile.fileName];
         const fileDisplayName = (gitFile.package ? `${gitFile.package}/${gitFile.displayName}` : gitFile.displayName) || gitFile.fileName;
-        table.addRow({
-            status: (0, github_1.getFileStatusIcon)(gitFile.status),
-            file: fileDisplayName,
-            functions: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.functions, jestConstants_1.MIN_COVERAGE.functions, gitFile.status),
-            branches: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.branches, jestConstants_1.MIN_COVERAGE.branches, gitFile.status),
-            statements: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.statements, jestConstants_1.MIN_COVERAGE.statements, gitFile.status),
-        });
+        try {
+            table.addRow({
+                status: (0, github_1.getFileStatusIcon)(gitFile.status),
+                file: fileDisplayName,
+                functions: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.functions, coverageDiff.functions),
+                branches: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.branches, coverageDiff.branches),
+                statements: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.statements, coverageDiff.statements),
+            });
+        }
+        catch (e) {
+            console.error(`Cannot add row for file: ${gitFile.status}::${gitFile.fileName}`);
+            if (gitFile.status !== 'D') {
+                console.error(e);
+            }
+        }
     });
     const changedCoverageFiles = Object.keys(jestCoverageDiff);
     const changedCoverageFilesStatus = changedCoverageFiles.map((fileName) => ({ status: 'U', fileName }));
@@ -7511,13 +7518,21 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
         }
         const coverageDiff = jestCoverageDiff[gitFile.fileName];
         const fileDisplayName = (gitFile.package ? `${gitFile.package}/${gitFile.displayName}` : gitFile.displayName) || gitFile.fileName;
-        table.addRow({
-            status: (0, github_1.getFileStatusIcon)(gitFile.status),
-            file: fileDisplayName,
-            functions: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.functions, jestConstants_1.MIN_COVERAGE.functions, gitFile.status),
-            branches: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.branches, jestConstants_1.MIN_COVERAGE.branches, gitFile.status),
-            statements: (0, jestReportUtils_1.convertCoverageToReportCell)(coverageDiff.statements, jestConstants_1.MIN_COVERAGE.statements, gitFile.status),
-        });
+        try {
+            table.addRow({
+                status: (0, github_1.getFileStatusIcon)(gitFile.status),
+                file: fileDisplayName,
+                functions: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.functions, coverageDiff.functions),
+                branches: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.branches, coverageDiff.branches),
+                statements: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.statements, coverageDiff.statements),
+            });
+        }
+        catch (e) {
+            console.error(`Cannot add row for changed coverage file: ${gitFile.status}::${gitFile.fileName}`);
+            if (gitFile.status !== 'D') {
+                console.error(e);
+            }
+        }
     });
     const tableMd = table.toString();
     console.debug({ tableMd });
@@ -7553,9 +7568,9 @@ const parseErrorMessage = (_err) => {
     }
     return commentMessage;
 };
+exports.parseErrorMessage = parseErrorMessage;
 const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
     yield fetchRequiredBranches();
-    console.group('Changed Files');
     const gitChangedFiles = getChangedFiles();
     let commentMessage = '';
     try {
@@ -7568,7 +7583,7 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
     catch (err) {
         console.debug('An error occurred in getCoverage, setting passed false');
         utils_1.globalState.set({ passed: false });
-        commentMessage = parseErrorMessage(err);
+        commentMessage = (0, exports.parseErrorMessage)(err);
     }
     console.debug({ commentMessage });
     yield (0, github_1.addOrRenewCommentOnPR)(commentMessage, 'Action:JestCoverage');
@@ -7596,35 +7611,37 @@ exports.main = main;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.convertCoverageToReportCell = void 0;
 const utils_1 = __webpack_require__(5928);
-const convertCoverageToReportCell = (data, minCoverage, status) => {
+const convertCoverageToReportCell = (status, minCoverage, data) => {
     let passed = utils_1.globalState.get('passed');
     let failureReason = utils_1.globalState.get('failureReason');
     let cell = '';
     let indicatorAdded = false;
-    if (!indicatorAdded && status === 'A' && (data.pct.current < minCoverage)) { // New file no coverage
+    if (!indicatorAdded && status === 'A' && (!data || (data.pct.current < minCoverage))) { // New file no coverage
         cell += '<b title="No test coverage for new file">🚨 </b>';
         passed = false;
         failureReason += '- No test coverage for new file.\n';
         indicatorAdded = true;
     }
-    if (!indicatorAdded && data.pct.current < data.pct.base) { // Coverage reduced
-        cell += '<b title="Coverage is reduced">🔴 </b>';
-        passed = false;
-        failureReason += '- Coverage is reduced.\n';
-        indicatorAdded = true;
-    }
-    if (!indicatorAdded && data.pct.current >= data.pct.base && data.pct.current < minCoverage) { // Coverage less than threshbase
-        cell += `<b title="Coverage is less than threshold of ${minCoverage}%">⚠️ </b>`;
-        indicatorAdded = true;
-    }
-    if (!indicatorAdded && data.pct.current >= data.pct.base) { // Coverage improved
-        cell += '🟢 ';
-        indicatorAdded = true;
-    }
-    cell += data.pct.current ? `<b title="${data.pct.current} (${data.covered.current}/${data.total.current})">**${Math.floor(data.pct.current)}%**</b>` : 'NA';
-    if (status !== 'A') {
-        cell += '←';
-        cell += data.covered.base ? `<i title="${data.pct.base} (${data.covered.base}/${data.total.base})">_${Math.floor(data.pct.base)}%_</i>` : 'NA';
+    if (data) {
+        if (!indicatorAdded && data.pct.current < data.pct.base) { // Coverage reduced
+            cell += '<b title="Coverage is reduced">🔴 </b>';
+            passed = false;
+            failureReason += '- Coverage is reduced.\n';
+            indicatorAdded = true;
+        }
+        if (!indicatorAdded && data.pct.current >= data.pct.base && data.pct.current < minCoverage) { // Coverage less than threshbase
+            cell += `<b title="Coverage is less than threshold of ${minCoverage}%">⚠️ </b>`;
+            indicatorAdded = true;
+        }
+        if (!indicatorAdded && data.pct.current >= data.pct.base) { // Coverage improved
+            cell += '🟢 ';
+            indicatorAdded = true;
+        }
+        cell += data.pct.current ? `<b title="${data.pct.current} (${data.covered.current}/${data.total.current})">**${Math.floor(data.pct.current)}%**</b>` : 'NA';
+        if (status !== 'A') {
+            cell += '←';
+            cell += data.covered.base ? `<i title="${data.pct.base} (${data.covered.base}/${data.total.base})">_${Math.floor(data.pct.base)}%_</i>` : 'NA';
+        }
     }
     if (!passed) {
         console.debug(`Coverage failure, setting passed as false. [${failureReason}]`);
@@ -7799,11 +7816,11 @@ const runner = (command, meta = {}) => {
         if (meta.nodeBin) {
             raw = nodeBin(_command);
         }
-        console.debug(kleur_1.default.dim(printCommand(command, info)));
+        console.log(kleur_1.default.dim(printCommand(command, info)));
         const cmd = Array.isArray(args) ? (0, child_process_1.spawn)(raw, args, options) : (0, child_process_1.spawn)(raw, options);
         cmd.stdout.on('data', (data) => {
             stdout += data;
-            process.stdout.write(`${printCommand(_command, info)}: ${data}`);
+            process.stdout.write(`${printCommand(_command, info)}: ${data}\n`);
             if (info.onStdout) {
                 info.onStdout(data);
             }
@@ -7818,7 +7835,7 @@ const runner = (command, meta = {}) => {
             }
             const withColor = Array.isArray(args) && args.includes('test') ? command : command;
             if (shouldPrint) {
-                process.stderr.write(withColor);
+                process.stderr.write(`${withColor}\n`);
             }
         });
         cmd.on('close', (code) => {
@@ -7945,50 +7962,62 @@ const createMarkdownTable = (headers) => {
 };
 exports.createMarkdownTable = createMarkdownTable;
 const addCommentOnPR = (message, identifier) => {
-    const token = core.getInput('token');
-    const octokit = github.getOctokit(token);
-    const context = github.context;
-    const prId = context.payload.pull_request.number;
-    const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n\n' + `_\`${identifier}\`_` }));
-    return newComment;
+    if (process.env.GITHUB_ACTIONS) {
+        const token = core.getInput('token');
+        const octokit = github.getOctokit(token);
+        const context = github.context;
+        const prId = context.payload.pull_request.number;
+        const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n\n' + `_\`${identifier}\`_` }));
+        return newComment;
+    }
+    return Promise.resolve();
 };
 exports.addCommentOnPR = addCommentOnPR;
 const deleteComment = (commentId) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    const token = core.getInput('token');
-    const octokit = github.getOctokit(token);
-    const context = github.context;
-    const deleteComment = yield octokit.rest.issues.deleteComment(Object.assign(Object.assign({}, context.repo), { comment_id: commentId }));
-    console.info(`Deleted comment: ${commentId}`);
-    return deleteComment;
+    if (process.env.GITHUB_ACTIONS) {
+        const token = core.getInput('token');
+        const octokit = github.getOctokit(token);
+        const context = github.context;
+        const deleteComment = yield octokit.rest.issues.deleteComment(Object.assign(Object.assign({}, context.repo), { comment_id: commentId }));
+        console.info(`Deleted comment: ${commentId}`);
+        return deleteComment;
+    }
+    return Promise.resolve();
 });
 exports.deleteComment = deleteComment;
 const addOrRenewCommentOnPR = (message, identifier) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    const token = core.getInput('token');
-    const octokit = github.getOctokit(token);
-    const context = github.context;
-    const prId = context.payload.pull_request.number;
-    const comments = yield octokit.rest.issues.listComments(Object.assign(Object.assign({}, context.repo), { issue_number: prId }));
-    const comment = comments.data.find((comment) => comment.body.includes(identifier));
-    if (comment) {
-        const newComment = yield octokit.rest.issues.updateComment(Object.assign(Object.assign({}, context.repo), { comment_id: comment.id, body: message + '\n' + `_${identifier}_` }));
-        return newComment;
+    if (process.env.GITHUB_ACTIONS) {
+        const token = core.getInput('token');
+        const octokit = github.getOctokit(token);
+        const context = github.context;
+        const prId = context.payload.pull_request.number;
+        const comments = yield octokit.rest.issues.listComments(Object.assign(Object.assign({}, context.repo), { issue_number: prId }));
+        const comment = comments.data.find((comment) => comment.body.includes(identifier));
+        if (comment) {
+            const newComment = yield octokit.rest.issues.updateComment(Object.assign(Object.assign({}, context.repo), { comment_id: comment.id, body: message + '\n' + `_${identifier}_` }));
+            return newComment;
+        }
+        else {
+            return (0, exports.addCommentOnPR)(message, identifier);
+        }
     }
-    else {
-        return (0, exports.addCommentOnPR)(message, identifier);
-    }
+    return Promise.resolve();
 });
 exports.addOrRenewCommentOnPR = addOrRenewCommentOnPR;
 const addNewSingletonComment = (message, identifier) => tslib_1.__awaiter(void 0, void 0, void 0, function* () {
-    const token = core.getInput('token');
-    const octokit = github.getOctokit(token);
-    const context = github.context;
-    const prId = context.payload.pull_request.number;
-    const comments = yield octokit.rest.issues.listComments(Object.assign(Object.assign({}, context.repo), { issue_number: prId }));
-    const comment = comments.data.find((comment) => comment.body.includes(identifier));
-    if (comment) {
-        yield (0, exports.deleteComment)(comment.id);
+    if (process.env.GITHUB_ACTIONS) {
+        const token = core.getInput('token');
+        const octokit = github.getOctokit(token);
+        const context = github.context;
+        const prId = context.payload.pull_request.number;
+        const comments = yield octokit.rest.issues.listComments(Object.assign(Object.assign({}, context.repo), { issue_number: prId }));
+        const comment = comments.data.find((comment) => comment.body.includes(identifier));
+        if (comment) {
+            yield (0, exports.deleteComment)(comment.id);
+        }
+        return (0, exports.addCommentOnPR)(message, identifier);
     }
-    return (0, exports.addCommentOnPR)(message, identifier);
+    return Promise.resolve();
 });
 exports.addNewSingletonComment = addNewSingletonComment;
 
@@ -8026,24 +8055,32 @@ __webpack_require__(6645); // Side-effects
 /***/ }),
 
 /***/ 6645:
-/***/ ((__unused_webpack_module, exports) => {
+/***/ (function(__unused_webpack_module, exports, __webpack_require__) {
 
 "use strict";
 
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.consoleFactory = void 0;
+const kleur_1 = __importDefault(__webpack_require__(1391));
 const _console = console;
 const consoleFactory = () => {
     return Object.assign(Object.assign({}, global.console), { debug: (...args) => {
             let message = '';
-            const isMultiLine = args.some((arg) => typeof arg === 'string' && arg.includes('\n'));
-            if (isMultiLine) {
-                message = args.map((arg) => JSON.stringify(arg)).join('\n');
+            if (args.length === 1) {
+                args = args[0];
             }
-            else {
-                message = args.map((arg) => JSON.stringify(arg)).join(' ');
+            try {
+                message = JSON.stringify(args, null, 2);
             }
-            _console.debug(`::debug::${message}`);
+            catch (_a) {
+                const isMultiLine = args.some((arg) => typeof arg === 'string' && arg.includes('\n'));
+                message = args.map((arg) => JSON.stringify(arg)).join(isMultiLine ? '\n' : ' ');
+            }
+            const debugMessage = process.env.GITHUB_ACTIONS ? `::debug::${message}` : kleur_1.default.blue(message);
+            _console.debug(debugMessage);
         }, group: (groupName) => {
             _console.log(`::group::${groupName}`);
         }, groupEnd: () => {
@@ -8142,8 +8179,8 @@ exports.getNpmRunnerCommand = getNpmRunnerCommand;
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.globalState = exports.globalStateFactory = void 0;
-const globalStateFactory = () => {
-    let state = {};
+const globalStateFactory = (initialState = {}) => {
+    let state = initialState;
     function set(key, value) {
         if (typeof key === 'string') {
             state[key] = value;
@@ -8165,7 +8202,9 @@ const globalStateFactory = () => {
     };
 };
 exports.globalStateFactory = globalStateFactory;
-exports.globalState = (0, exports.globalStateFactory)();
+exports.globalState = (0, exports.globalStateFactory)({
+    passed: true,
+});
 
 
 /***/ }),

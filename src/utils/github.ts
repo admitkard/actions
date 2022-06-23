@@ -47,64 +47,76 @@ export const createMarkdownTable = <T extends Record<string, string>>(headers: T
 };
 
 export const addCommentOnPR = (message: string, identifier: string) => {
-  const token = core.getInput('token');
-  const octokit = github.getOctokit(token);
-  const context = github.context;
-  const prId = context.payload.pull_request.number;
-  const newComment = octokit.rest.issues.createComment({
-    ...context.repo,
-    issue_number: prId,
-    body: message + '\n\n' + `_\`${identifier}\`_`,
-  });
-  return newComment;
+  if (process.env.GITHUB_ACTIONS) {
+    const token = core.getInput('token');
+    const octokit = github.getOctokit(token);
+    const context = github.context;
+    const prId = context.payload.pull_request.number;
+    const newComment = octokit.rest.issues.createComment({
+      ...context.repo,
+      issue_number: prId,
+      body: message + '\n\n' + `_\`${identifier}\`_`,
+    });
+    return newComment;
+  }
+  return Promise.resolve();
 }
 
 export const deleteComment = async (commentId: number) => {
-  const token = core.getInput('token');
-  const octokit = github.getOctokit(token);
-  const context = github.context;
-  const deleteComment = await octokit.rest.issues.deleteComment({
-    ...context.repo,
-    comment_id: commentId,
-  });
-  console.info(`Deleted comment: ${commentId}`);
-  return deleteComment;
+  if (process.env.GITHUB_ACTIONS) {
+    const token = core.getInput('token');
+    const octokit = github.getOctokit(token);
+    const context = github.context;
+    const deleteComment = await octokit.rest.issues.deleteComment({
+      ...context.repo,
+      comment_id: commentId,
+    });
+    console.info(`Deleted comment: ${commentId}`);
+    return deleteComment;
+  }
+  return Promise.resolve();
 }
 
 export const addOrRenewCommentOnPR = async (message: string, identifier: string) => {
-  const token = core.getInput('token');
-  const octokit = github.getOctokit(token);
-  const context = github.context;
-  const prId = context.payload.pull_request.number;
-  const comments = await octokit.rest.issues.listComments({
-    ...context.repo,
-    issue_number: prId,
-  });
-  const comment = comments.data.find((comment) => comment.body.includes(identifier));
-  if (comment) {
-    const newComment = await octokit.rest.issues.updateComment({
+  if (process.env.GITHUB_ACTIONS) {
+    const token = core.getInput('token');
+    const octokit = github.getOctokit(token);
+    const context = github.context;
+    const prId = context.payload.pull_request.number;
+    const comments = await octokit.rest.issues.listComments({
       ...context.repo,
-      comment_id: comment.id,
-      body: message + '\n' + `_${identifier}_`,
+      issue_number: prId,
     });
-    return newComment;
-  } else {
-    return addCommentOnPR(message, identifier);
+    const comment = comments.data.find((comment) => comment.body.includes(identifier));
+    if (comment) {
+      const newComment = await octokit.rest.issues.updateComment({
+        ...context.repo,
+        comment_id: comment.id,
+        body: message + '\n' + `_${identifier}_`,
+      });
+      return newComment;
+    } else {
+      return addCommentOnPR(message, identifier);
+    }
   }
+  return Promise.resolve();
 }
 
 export const addNewSingletonComment = async (message: string, identifier: string) => {
-  const token = core.getInput('token');
-  const octokit = github.getOctokit(token);
-  const context = github.context;
-  const prId = context.payload.pull_request.number;
-  const comments = await octokit.rest.issues.listComments({
-    ...context.repo,
-    issue_number: prId,
-  });
-  const comment = comments.data.find((comment) => comment.body.includes(identifier));
-  if (comment) {
-    await deleteComment(comment.id);
+  if (process.env.GITHUB_ACTIONS) {
+    const token = core.getInput('token');
+    const octokit = github.getOctokit(token);
+    const context = github.context;
+    const prId = context.payload.pull_request.number;
+    const comments = await octokit.rest.issues.listComments({
+      ...context.repo,
+      issue_number: prId,
+    });
+    const comment = comments.data.find((comment) => comment.body.includes(identifier));
+    if (comment) {
+      await deleteComment(comment.id);
+    }
+    return addCommentOnPR(message, identifier);
   }
-  return addCommentOnPR(message, identifier);
+  return Promise.resolve();
 }

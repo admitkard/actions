@@ -1,7 +1,5 @@
-export const globalStateFactory = () => {
-  let state: Record<string, any> = {
-
-  };
+export const globalStateFactory = (initialState: Record<string, any> = {}) => {
+  let state: Record<string, any> = initialState;
   function set(subState: Record<string, any>): void;
   function set(key: string, value: any): void;
   function set(key, value?) {
@@ -25,4 +23,6 @@ export const globalStateFactory = () => {
   };
 };
 
-export const globalState = globalStateFactory();
+export const globalState = globalStateFactory({
+  passed: true,
+});
