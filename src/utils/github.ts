@@ -55,7 +55,7 @@ export const addCommentOnPR = (message: string, identifier: string) => {
     const newComment = octokit.rest.issues.createComment({
       ...context.repo,
       issue_number: prId,
-      body: message + '\n\n' + `_\`${identifier}\`_`,
+      body: message + '\n\n' + `\`_${identifier}_\``,
     });
     return newComment;
   }
