@@ -55,12 +55,12 @@ export const getNpmRunnerCommand = (command: string, ...args: string[]) => {
   const npmRunner = getNpmRunner();
   if (npmRunner === 'yarn') {
     const finalCommand = YARN_COMMAND_MAPPER[command] || command;
-    const argsString = args ? ` ${(args || []).join(' ')}` : '';
+    const argsString = args && args.length > 0 ? ` ${(args || []).join(' ')}` : '';
     return `${npmRunner} ${finalCommand}${argsString}`;
   }
   if (NPM_RESERVED_COMMANDS.includes(npmCommand)) {
     const finalCommand = NPM_COMMAND_MAPPER[command] || command;
-    const argsString = args ? ` -- ${(args || []).join(' ')}` : '';
+    const argsString = args && args.length > 0 ? ` -- ${(args || []).join(' ')}` : '';
     return `${npmRunner} ${finalCommand}${argsString}`;
   }
   return `${npmRunner} run ${command} -- ${(args || []).join(' ')}`;
