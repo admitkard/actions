@@ -188,6 +188,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
         branches: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.branches, coverageDiff.branches),
         statements: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.statements, coverageDiff.statements),
       });
+      console.debug(`Added File: ${gitFile.fileName}`);
     } catch (e) {
       console.error(`Cannot add row for file: ${gitFile.status}::${gitFile.fileName}`);
       if (gitFile.status !== 'D') {
@@ -215,6 +216,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
         branches: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.branches, coverageDiff.branches),
         statements: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.statements, coverageDiff.statements),
       });
+      console.debug(`Added Changed Coverage File: ${gitFile.fileName}`);
     } catch (e) {
       console.error(`Cannot add row for changed coverage file: ${gitFile.status}::${gitFile.fileName}`);
       if (gitFile.status !== 'D') {
