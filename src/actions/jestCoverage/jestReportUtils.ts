@@ -32,6 +32,10 @@ export const convertCoverageToReportCell = (data: JestItemDiff, minCoverage: num
     cell += data.covered.base ? `<i title="${data.pct.base} (${data.covered.base}/${data.total.base})">_${Math.floor(data.pct.base)}%_</i>` : 'NA';
   }
 
+  if (!passed) {
+    console.debug(`Coverage failure, setting passed as false. [${failureReason}]`);
+  }
+
   globalState.set({ passed, failureReason });
   return cell;
 };

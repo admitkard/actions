@@ -256,6 +256,7 @@ const getCoverage = async () => {
     saveCoverageDiff(jestCoverageDiff);
     commentMessage = coverageMessage(gitChangedFiles, jestCoverageDiff);
   } catch (err) {
+    console.debug('An error occurred in getCoverage, setting passed false');
     globalState.set({ passed: false });
     commentMessage = parseErrorMessage(err);
   }
