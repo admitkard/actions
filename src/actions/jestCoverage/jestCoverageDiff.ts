@@ -118,19 +118,22 @@ const getFilesWithChangedCoverage = (currentFilesCoverage: Record<string, JestCo
   Object.keys(currentFilesCoverage).forEach((fileName) => {
     const currentCoverage = currentFilesCoverage[fileName];
     const baseCoverage = baseFilesCoverage[fileName];
-    let hasDiff = false;
+    let hasDiff = true;
     if (
-      (currentCoverage.lines.pct !== baseCoverage.lines.pct) ||
-      (currentCoverage.branches.pct !== baseCoverage.branches.pct) ||
-      (currentCoverage.functions.pct !== baseCoverage.functions.pct) ||
-      (currentCoverage.statements.pct !== baseCoverage.statements.pct)
+      (currentCoverage && baseCoverage) && (
+        (currentCoverage.lines.pct === baseCoverage.lines.pct) &&
+        (currentCoverage.branches.pct === baseCoverage.branches.pct) &&
+        (currentCoverage.functions.pct === baseCoverage.functions.pct) &&
+        (currentCoverage.statements.pct === baseCoverage.statements.pct)
+      )
     ) {
-      hasDiff = true;
+      hasDiff = false;
     }
     if (hasDiff) {
       changedFiles.push(fileName);
     }
   });
+  console.debug({ finalChangedFiles: changedFiles });
   return changedFiles;
 };
 
@@ -159,6 +162,7 @@ const mergeJestCoverage = (currentJestCoverage: Record<string, JestCoverageSumma
       statements: getMetricCoverageDiff(currentCoverage, baseCoverage, 'statements'),
     }
   });
+  console.debug({ fileCoverage });
   console.groupEnd();
   return fileCoverage;
 }
