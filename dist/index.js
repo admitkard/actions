@@ -7498,14 +7498,14 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
             table.addRow({
                 status: (0, github_1.getFileStatusIcon)(gitFile.status),
                 file: `<span title="${gitFile.fileName}">${fileDisplayName}</span>`,
-                functions: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.functions, coverageDiff.functions),
-                branches: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.branches, coverageDiff.branches),
-                statements: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.statements, coverageDiff.statements),
+                functions: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.functions, coverageDiff === null || coverageDiff === void 0 ? void 0 : coverageDiff.functions),
+                branches: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.branches, coverageDiff === null || coverageDiff === void 0 ? void 0 : coverageDiff.branches),
+                statements: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.statements, coverageDiff === null || coverageDiff === void 0 ? void 0 : coverageDiff.statements),
             });
             console.debug(`Added File: ${gitFile.fileName}`);
         }
         catch (e) {
-            console.error(`Cannot add row for file: ${gitFile.status}::${gitFile.fileName}`);
+            console.error(`Cannot add row for file: ${gitFile.status}::${gitFile.fileName}`, coverageDiff);
             if (gitFile.status !== 'D') {
                 console.error(e);
             }
@@ -7525,9 +7525,9 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
             table.addRow({
                 status: (0, github_1.getFileStatusIcon)(gitFile.status),
                 file: `<span title="${gitFile.fileName}">${fileDisplayName}</span>`,
-                functions: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.functions, coverageDiff.functions),
-                branches: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.branches, coverageDiff.branches),
-                statements: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.statements, coverageDiff.statements),
+                functions: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.functions, coverageDiff === null || coverageDiff === void 0 ? void 0 : coverageDiff.functions),
+                branches: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.branches, coverageDiff === null || coverageDiff === void 0 ? void 0 : coverageDiff.branches),
+                statements: (0, jestReportUtils_1.convertCoverageToReportCell)(gitFile.status, jestConstants_1.MIN_COVERAGE.statements, coverageDiff === null || coverageDiff === void 0 ? void 0 : coverageDiff.statements),
             });
             console.debug(`Added Changed Coverage File: ${gitFile.fileName}`);
         }
@@ -7589,12 +7589,13 @@ const getCoverage = () => tslib_1.__awaiter(void 0, void 0, void 0, function* ()
         utils_1.globalState.set({ passed: false });
         commentMessage = (0, exports.parseErrorMessage)(err);
     }
-    console.debug({ commentMessage });
+    console.log(commentMessage);
     yield (0, github_1.addOrRenewCommentOnPR)(commentMessage, 'Action:JestCoverage');
     console.debug({ passed: utils_1.globalState.get('passed') });
     let exitCode = 0;
     if (!utils_1.globalState.get('passed')) {
         exitCode = 1;
+        commentMessage;
     }
     console.debug({ exitCode });
     process.exit(exitCode);
@@ -7616,6 +7617,7 @@ Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.convertCoverageToReportCell = void 0;
 const utils_1 = __webpack_require__(5928);
 const convertCoverageToReportCell = (status, minCoverage, data) => {
+    var _a, _b;
     let passed = utils_1.globalState.get('passed');
     let failureReason = utils_1.globalState.get('failureReason');
     let cell = '';
@@ -7656,6 +7658,9 @@ const convertCoverageToReportCell = (status, minCoverage, data) => {
             cell += '←';
             cell += data.covered.base ? `<i title="${data.pct.base} (${data.covered.base}/${data.total.base})">_${Math.floor(data.pct.base)}%_</i>` : 'NA';
         }
+    }
+    if (!cell && !((_a = data === null || data === void 0 ? void 0 : data.pct) === null || _a === void 0 ? void 0 : _a.base) && !((_b = data === null || data === void 0 ? void 0 : data.pct) === null || _b === void 0 ? void 0 : _b.current)) {
+        cell = '<span title="No Tests Found">NT</span>';
     }
     if (!passed) {
         console.debug(`Coverage failure, setting passed as false. [${failureReason}]`);
@@ -8270,10 +8275,10 @@ const systemCheckFactory = () => {
             const result = systemCheck.systemCheckFn();
             if (result) {
                 failed = true;
-                console.error(kleur_1.default.red(`SYSTEM_CHECK_FAILED: [${systemCheck.name}] -${result}`));
+                console.error(kleur_1.default.red(`✗ SYSTEM_CHECK_FAILED: [${systemCheck.name}] -${result}`));
             }
             else {
-                console.log(kleur_1.default.green(`SYSTEM_CHECK_PASSED: [${systemCheck.name}]`));
+                console.log(kleur_1.default.green(`✓ SYSTEM_CHECK_PASSED: [${systemCheck.name}]`));
             }
         }
         if (failed) {

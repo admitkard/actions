@@ -184,13 +184,13 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
       table.addRow({
         status: getFileStatusIcon(gitFile.status),
         file: `<span title="${gitFile.fileName}">${fileDisplayName}</span>`,
-        functions: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.functions, coverageDiff.functions),
-        branches: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.branches, coverageDiff.branches),
-        statements: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.statements, coverageDiff.statements),
+        functions: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.functions, coverageDiff?.functions),
+        branches: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.branches, coverageDiff?.branches),
+        statements: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.statements, coverageDiff?.statements),
       });
       console.debug(`Added File: ${gitFile.fileName}`);
     } catch (e) {
-      console.error(`Cannot add row for file: ${gitFile.status}::${gitFile.fileName}`);
+      console.error(`Cannot add row for file: ${gitFile.status}::${gitFile.fileName}`, coverageDiff);
       if (gitFile.status !== 'D') {
         console.error(e);
       }
@@ -212,9 +212,9 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
       table.addRow({
         status: getFileStatusIcon(gitFile.status),
         file: `<span title="${gitFile.fileName}">${fileDisplayName}</span>`,
-        functions: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.functions, coverageDiff.functions),
-        branches: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.branches, coverageDiff.branches),
-        statements: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.statements, coverageDiff.statements),
+        functions: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.functions, coverageDiff?.functions),
+        branches: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.branches, coverageDiff?.branches),
+        statements: convertCoverageToReportCell(gitFile.status, MIN_COVERAGE.statements, coverageDiff?.statements),
       });
       console.debug(`Added Changed Coverage File: ${gitFile.fileName}`);
     } catch (e) {
@@ -277,12 +277,12 @@ const getCoverage = async () => {
     globalState.set({ passed: false });
     commentMessage = parseErrorMessage(err);
   }
-  console.debug({ commentMessage });
+  console.log(commentMessage);
   await addOrRenewCommentOnPR(commentMessage, 'Action:JestCoverage');
   console.debug({ passed: globalState.get('passed') });
   let exitCode = 0;
   if (!globalState.get('passed')) {
-    exitCode = 1;
+    exitCode = 1;commentMessage
   }
   console.debug({ exitCode });
   process.exit(exitCode);

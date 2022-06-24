@@ -43,6 +43,9 @@ export const convertCoverageToReportCell = (status: string, minCoverage: number,
       cell += data.covered.base ? `<i title="${data.pct.base} (${data.covered.base}/${data.total.base})">_${Math.floor(data.pct.base)}%_</i>` : 'NA';
     }
   }
+  if (!cell && !data?.pct?.base && !data?.pct?.current) {
+    cell = '<span title="No Tests Found">NT</span>'
+  }
 
   if (!passed) {
     console.debug(`Coverage failure, setting passed as false. [${failureReason}]`);

@@ -21,9 +21,9 @@ const systemCheckFactory = () => {
       const result = systemCheck.systemCheckFn();
       if (result) {
         failed = true;
-        console.error(kleur.red(`SYSTEM_CHECK_FAILED: [${systemCheck.name}] -${result}`))
+        console.error(kleur.red(`✗ SYSTEM_CHECK_FAILED: [${systemCheck.name}] -${result}`))
       } else {
-        console.log(kleur.green(`SYSTEM_CHECK_PASSED: [${systemCheck.name}]`))
+        console.log(kleur.green(`✓ SYSTEM_CHECK_PASSED: [${systemCheck.name}]`))
       }
     }
     if (failed) {

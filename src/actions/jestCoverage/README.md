@@ -51,6 +51,11 @@ jobs:
           token: ${{ secrets.PUSH_TO_PROTECTED_BRANCH_BOT }} # don't change it
 ```
 
+## Local Testing
+To test locally, you will need to provide some env variables as mentioned below.
+```bash
+CI=true GITHUB_BASE_REF=dev GITHUB_HEAD_REF=piyush-AKPL-8094 node ../<action_repo>/dist/index.js
+```
 ## Features
 - Reports changed files
  
