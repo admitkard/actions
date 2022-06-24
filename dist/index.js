@@ -7628,7 +7628,7 @@ const getIndicator = (status, minCoverage, data) => {
     };
     // New file has not UTs
     if (status === 'A' && (!data || (data.pct.current < minCoverage))) {
-        result.indicator = withTitle('🚨 ', 'No test coverage for new file');
+        result.indicator = withTitle('😡 ', 'No test coverage for new file'); // 🚨
         result.passed = false;
         failureReason.push('No test coverage for new file.');
         utils_1.globalState.set({ failureReason });
@@ -7636,16 +7636,16 @@ const getIndicator = (status, minCoverage, data) => {
     }
     // No Coverage
     if (!((_a = data === null || data === void 0 ? void 0 : data.pct) === null || _a === void 0 ? void 0 : _a.base) && !((_b = data === null || data === void 0 ? void 0 : data.pct) === null || _b === void 0 ? void 0 : _b.current)) {
-        result.indicator = withTitle('⬜', 'No Tests Found');
+        result.indicator = withTitle('👻 ', 'No Tests Found');
         return result;
     }
     if (!((_c = data === null || data === void 0 ? void 0 : data.pct) === null || _c === void 0 ? void 0 : _c.base)) { // No base coverage
         if (data.pct.current >= minCoverage) { // Current Coverage above threshold
-            result.indicator += '🟢 ';
+            result.indicator += '💚 ';
             return result;
         }
         if (data.pct.current < minCoverage) { // Current coverage below threshold
-            result.indicator += withTitle('⚠️ ', `Current coverage is less than threshold of ${minCoverage}%`);
+            result.indicator += withTitle('🍋 ', `Current coverage is less than threshold of ${minCoverage}%`);
             return result;
         }
     }
@@ -7659,7 +7659,7 @@ const getIndicator = (status, minCoverage, data) => {
     }
     // Coverage increased, but still below threshold
     if (data.pct.current >= data.pct.base && data.pct.current < minCoverage) {
-        result.indicator = withTitle('⚠️ ', `Coverage is less than threshold of ${minCoverage}%`);
+        result.indicator = withTitle('🍋 ', `Coverage is less than threshold of ${minCoverage}%`);
         return result;
     }
     // Coverage increased, and above threshold
