@@ -9,7 +9,7 @@ export const getFileStatusIcon = (status = '') => {
     return '<b title="Modified"><img height="12px" src="https://icons-for-free.com/download-icon-refresh+reload+sync+update+icon-1320137054460780608_512.png" alt="🟨"/></b>';
   }
   if (status === 'D') {
-    return '<b title="Deleted"><img height="12px" src="https://www.pngall.com/wp-content/uploads/5/Red-Minus-PNG-High-Quality-Image.png" alt="🟥"/></b>';
+    return '<b title="Deleted"><img height="6px" src="https://www.pngall.com/wp-content/uploads/5/Red-Minus-PNG-High-Quality-Image.png" alt="🟥"/></b>';
   }
   if (status.indexOf('R') === 0) {
     return '<b title="Renamed">𝖨a</b>';

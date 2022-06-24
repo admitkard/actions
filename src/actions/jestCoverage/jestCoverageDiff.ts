@@ -235,10 +235,10 @@ const coverageMessage = (transformedGitFiles: FileDetails[], jestCoverageDiff: R
   const additionalInfoBefore = [];
   additionalInfoBefore.push(`Status: ${globalState.get('passed') ? '🟢 Well Done' : '🔴 Some failures are reported'}`);
   if (globalState.get('failureReason')) {
-    additionalInfoBefore.push(`Failure Reasons:\n${globalState.get('failureReason')}`);
+    additionalInfoBefore.push(`Failure Reasons:\n${globalState.get<string[]>('failureReason').map((reason) => `- ${reason}`).join('\n')}`);
   }
   const additionalInfoAfter = [];
-  const message = `${additionalInfoBefore.join('\n')}\n\n${tableMd}\n\n${additionalInfoAfter.join('\n')}`;
+  const message = [additionalInfoBefore.join('\n'), tableMd, additionalInfoAfter.join('\n')].join('\n\n');
   console.group('Jest coverage-diff message');
   console.debug(message);
   console.groupEnd();

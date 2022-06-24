@@ -7547,10 +7547,10 @@ const coverageMessage = (transformedGitFiles, jestCoverageDiff) => {
     const additionalInfoBefore = [];
     additionalInfoBefore.push(`Status: ${utils_1.globalState.get('passed') ? '🟢 Well Done' : '🔴 Some failures are reported'}`);
     if (utils_1.globalState.get('failureReason')) {
-        additionalInfoBefore.push(`Failure Reasons:\n${utils_1.globalState.get('failureReason')}`);
+        additionalInfoBefore.push(`Failure Reasons:\n${utils_1.globalState.get('failureReason').map((reason) => `- ${reason}`).join('\n')}`);
     }
     const additionalInfoAfter = [];
-    const message = `${additionalInfoBefore.join('\n')}\n\n${tableMd}\n\n${additionalInfoAfter.join('\n')}`;
+    const message = [additionalInfoBefore.join('\n'), tableMd, additionalInfoAfter.join('\n')].join('\n\n');
     console.group('Jest coverage-diff message');
     console.debug(message);
     console.groupEnd();
@@ -7616,56 +7616,76 @@ exports.main = main;
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.convertCoverageToReportCell = void 0;
 const utils_1 = __webpack_require__(5928);
-const convertCoverageToReportCell = (status, minCoverage, data) => {
-    var _a, _b;
-    let passed = utils_1.globalState.get('passed');
-    let failureReason = utils_1.globalState.get('failureReason');
-    let cell = '';
-    let indicatorAdded = false;
-    if (!indicatorAdded && status === 'A' && (!data || (data.pct.current < minCoverage))) { // New file no coverage
-        cell += '<b title="No test coverage for new file">🚨 </b>';
-        passed = false;
-        failureReason += '- No test coverage for new file.\n';
-        indicatorAdded = true;
+const withTitle = (text, title, htmlEl = 'span') => {
+    return `<${htmlEl} title="${title}">${text}</${htmlEl}>`;
+};
+const getIndicator = (status, minCoverage, data) => {
+    var _a, _b, _c;
+    const failureReason = utils_1.globalState.get('failureReason');
+    let result = {
+        indicator: '',
+        passed: utils_1.globalState.get('passed'),
+    };
+    // New file has not UTs
+    if (status === 'A' && (!data || (data.pct.current < minCoverage))) {
+        result.indicator = withTitle('🚨 ', 'No test coverage for new file');
+        result.passed = false;
+        failureReason.push('No test coverage for new file.');
+        utils_1.globalState.set({ failureReason });
+        return result;
     }
+    // No Coverage
+    if (!((_a = data === null || data === void 0 ? void 0 : data.pct) === null || _a === void 0 ? void 0 : _a.base) && !((_b = data === null || data === void 0 ? void 0 : data.pct) === null || _b === void 0 ? void 0 : _b.current)) {
+        result.indicator = withTitle('⬜', 'No Tests Found');
+        return result;
+    }
+    if (!((_c = data === null || data === void 0 ? void 0 : data.pct) === null || _c === void 0 ? void 0 : _c.base)) { // No base coverage
+        if (data.pct.current >= minCoverage) { // Current Coverage above threshold
+            result.indicator += '🟢 ';
+            return result;
+        }
+        if (data.pct.current < minCoverage) { // Current coverage below threshold
+            result.indicator += withTitle('⚠️ ', `Current coverage is less than threshold of ${minCoverage}%`);
+            return result;
+        }
+    }
+    // Coverage Reduced
+    if (data.pct.current < data.pct.base) {
+        result.indicator += withTitle('🔻 ', 'Coverage is reduced');
+        result.passed = false;
+        failureReason.push('Coverage is reduced.');
+        utils_1.globalState.set({ failureReason });
+        return result;
+    }
+    // Coverage increased, but still below threshold
+    if (data.pct.current >= data.pct.base && data.pct.current < minCoverage) {
+        result.indicator = withTitle('⚠️ ', `Coverage is less than threshold of ${minCoverage}%`);
+        return result;
+    }
+    // Coverage increased, and above threshold
+    if (data.pct.current >= data.pct.base && data.pct.current >= minCoverage) {
+        result.indicator = '<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Increase.svg/2054px-Increase.svg.png" alt="🟩"/> ';
+    }
+    return result;
+};
+const getCoverageString = (pct, covered, total, htmlEl = 'span') => {
+    return pct ? withTitle(`${Math.floor(pct)}%`, `${pct} (${covered}/${total}`, htmlEl) : 'NA';
+};
+const convertCoverageToReportCell = (status, minCoverage, data) => {
+    const indicator = getIndicator(status, minCoverage, data);
+    let passed = indicator.passed;
+    let failureReason = utils_1.globalState.get('failureReason');
+    let cell = indicator.indicator;
     if (data) {
-        if (!indicatorAdded && data.pct.current < data.pct.base) { // Coverage reduced
-            cell += '<b title="Coverage is reduced">🔴 </b>';
-            passed = false;
-            failureReason += '- Coverage is reduced.\n';
-            indicatorAdded = true;
-        }
-        if (!indicatorAdded && data.pct.current >= data.pct.base && data.pct.current < minCoverage) { // Coverage less than threshbase
-            cell += `<b title="Coverage is less than threshold of ${minCoverage}%">⚠️ </b>`;
-            indicatorAdded = true;
-        }
-        if (!indicatorAdded && data.pct.current >= data.pct.base) { // Coverage improved
-            cell += '🟢 ';
-            indicatorAdded = true;
-        }
-        if (!indicatorAdded && !data.pct.base) { // No Base Coverage improved
-            if (data.pct.current >= minCoverage) {
-                cell += '🟢 ';
-                indicatorAdded = true;
-            }
-            if (data.pct.current < minCoverage) {
-                cell += '🔴 ';
-                indicatorAdded = true;
-            }
-        }
-        cell += data.pct.current ? `<b title="${data.pct.current} (${data.covered.current}/${data.total.current})">**${Math.floor(data.pct.current)}%**</b>` : 'NA';
+        cell += getCoverageString(data.pct.current, data.covered.current, data.total.current, 'b');
         if (status !== 'A') {
             cell += '←';
-            cell += data.covered.base ? `<i title="${data.pct.base} (${data.covered.base}/${data.total.base})">_${Math.floor(data.pct.base)}%_</i>` : 'NA';
+            cell += getCoverageString(data.pct.base, data.covered.base, data.total.base, 'i');
         }
     }
-    if (!cell && !((_a = data === null || data === void 0 ? void 0 : data.pct) === null || _a === void 0 ? void 0 : _a.base) && !((_b = data === null || data === void 0 ? void 0 : data.pct) === null || _b === void 0 ? void 0 : _b.current)) {
-        cell = '<span title="No Tests Found">NT</span>';
-    }
     if (!passed) {
-        console.debug(`Coverage failure, setting passed as false. [${failureReason}]`);
+        console.debug(`Coverage failure, setting passed as false. [${JSON.stringify(failureReason)}]`);
     }
-    utils_1.globalState.set({ passed, failureReason });
     return cell;
 };
 exports.convertCoverageToReportCell = convertCoverageToReportCell;
@@ -7948,7 +7968,7 @@ const getFileStatusIcon = (status = '') => {
         return '<b title="Modified"><img height="12px" src="https://icons-for-free.com/download-icon-refresh+reload+sync+update+icon-1320137054460780608_512.png" alt="🟨"/></b>';
     }
     if (status === 'D') {
-        return '<b title="Deleted"><img height="12px" src="https://www.pngall.com/wp-content/uploads/5/Red-Minus-PNG-High-Quality-Image.png" alt="🟥"/></b>';
+        return '<b title="Deleted"><img height="6px" src="https://www.pngall.com/wp-content/uploads/5/Red-Minus-PNG-High-Quality-Image.png" alt="🟥"/></b>';
     }
     if (status.indexOf('R') === 0) {
         return '<b title="Renamed">𝖨a</b>';
