@@ -18,4 +18,8 @@ export const DISALLOWED_FILES = [
   '.*\\.json',
   '.*\\.lock',
   '\\..*',
+  '.*\\.jpg',
+  '.*\\.png',
+  '.*\\.gif',
+  '.*\\.svg.*',
 ];

@@ -58,7 +58,7 @@ export const addCommentOnPR = (message: string, identifier: string) => {
     const newComment = octokit.rest.issues.createComment({
       ...context.repo,
       issue_number: prId,
-      body: message + '\n\n' + `\`_${identifier}_\``,
+      body: message + '\n\n' + `_\`${identifier}\`_`,
     });
     return newComment;
   }
@@ -95,7 +95,7 @@ export const addOrRenewCommentOnPR = async (message: string, identifier: string)
       const newComment = await octokit.rest.issues.updateComment({
         ...context.repo,
         comment_id: comment.id,
-        body: message + '\n' + `_${identifier}_`,
+        body: message + '\n' + `_\`${identifier}\`_`,
       });
       return newComment;
     } else {
