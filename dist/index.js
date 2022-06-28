@@ -8246,6 +8246,7 @@ const globalStateFactory = (initialState = {}) => {
 exports.globalStateFactory = globalStateFactory;
 exports.globalState = (0, exports.globalStateFactory)({
     passed: true,
+    failureReason: []
 });
 
 

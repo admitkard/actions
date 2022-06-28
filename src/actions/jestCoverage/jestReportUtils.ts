@@ -55,7 +55,7 @@ const getIndicator = (status: string, minCoverage: number, data?: JestItemDiff) 
 
   // Coverage increased, and above threshold
   if (data.pct.current >= data.pct.base && data.pct.current >= minCoverage) {
-    result.indicator = '<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Increase.svg/2054px-Increase.svg.png" alt="🟩"/> ';
+    result.indicator = '<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Increase.svg/2054px-Increase.svg.png" height="12px" alt="🟩"/> ';
   }
 
   return result;

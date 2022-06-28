@@ -25,4 +25,5 @@ export const globalStateFactory = (initialState: Record<string, any> = {}) => {
 
 export const globalState = globalStateFactory({
   passed: true,
+  failureReason: []
 });
