@@ -51,7 +51,7 @@ const getIndicator = (status: string, minCoverage: number, data?: JestItemDiff) 
     result.indicator += withTitle('🔻 ', 'Coverage is reduced');
     result.passed = false;
     failureReason.add('Coverage is reduced.');
-    hints.add('🔻 - New tests added, but Coverage is above threshold. No failure, but needs to improvements');
+    hints.add('🔻 - Coverage is reduced, should be fixed.');
     globalState.set({ hints, failureReason });
     return result;
   }
