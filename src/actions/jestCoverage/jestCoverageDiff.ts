@@ -112,7 +112,7 @@ const getBaseBranchJestCoverage = async () => {
   return fileCoverages;
 };
 
-const getFilesWithChangedCoverage = (currentFilesCoverage: Record<string, JestCoverageSummary>, baseFilesCoverage: Record<string, JestCoverageSummary>) => {
+export const getFilesWithChangedCoverage = (currentFilesCoverage: Record<string, JestCoverageSummary>, baseFilesCoverage: Record<string, JestCoverageSummary>) => {
   const changedFiles: string[] = [];
   Object.keys(currentFilesCoverage).forEach((fileName) => {
     const currentCoverage = currentFilesCoverage[fileName];
@@ -150,8 +150,8 @@ const mergeJestCoverage = (currentJestCoverage: Record<string, JestCoverageSumma
   const fileCoverage: Record<string, JestCoverageDiff> = {}; 
   console.group('Merging jest coverage');
   console.debug({ currentJestCoverage, baseJestCoverage });
-  const changedFiles = getFilesWithChangedCoverage(currentJestCoverage, baseJestCoverage);
-  changedFiles.forEach((fileName) => {
+  // const changedFiles = getFilesWithChangedCoverage(currentJestCoverage, baseJestCoverage);
+  Object.keys(currentJestCoverage).forEach((fileName) => {
     const currentCoverage = currentJestCoverage[fileName];
     const baseCoverage = baseJestCoverage[fileName];
     fileCoverage[fileName] = {
@@ -164,6 +164,23 @@ const mergeJestCoverage = (currentJestCoverage: Record<string, JestCoverageSumma
   console.debug({ fileCoverage });
   console.groupEnd();
   return fileCoverage;
+}
+
+const getFilesWithChangedCoverageDiff = (jestCoverageDiff: Record<string, JestCoverageDiff>) => {
+  const changedFiles: string[] = [];
+  Object.keys(jestCoverageDiff).forEach((file) => {
+    const thisFile = jestCoverageDiff[file];
+    let hasDiff = false;
+    ['lines', 'functions', 'statements', 'branches'].forEach((metric) => {
+      if (thisFile[metric].pct.base !== thisFile[metric].pct.current) {
+        hasDiff = true;
+      }
+    })
+    if (hasDiff) {
+      changedFiles.push(file);
+    }
+  });
+  return changedFiles;
 }
 
 const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCoverageDiff: Record<string, JestCoverageDiff>) => {
@@ -197,7 +214,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles: FileDetails[], jestCove
     }
   });
 
-  const changedCoverageFiles = Object.keys(jestCoverageDiff);
+  const changedCoverageFiles = getFilesWithChangedCoverageDiff(jestCoverageDiff);
   const changedCoverageFilesStatus = changedCoverageFiles.map((fileName) => ({ status: 'U', fileName }));
 
   const transformedChangedCoverageFiles = transformGitFiles(changedCoverageFilesStatus);
@@ -235,9 +252,10 @@ const coverageMessage = (transformedGitFiles: FileDetails[], jestCoverageDiff: R
   const additionalInfoBefore = [];
   additionalInfoBefore.push(`Status: ${globalState.get('passed') ? '🟢 Well Done' : '🔴 Some failures are reported'}`);
   if (globalState.get('failureReason')) {
-    additionalInfoBefore.push(`Failure Reasons:\n${globalState.get<string[]>('failureReason').map((reason) => `- ${reason}`).join('\n')}`);
+    additionalInfoBefore.push(`Failure Reasons:\n${Array.from(globalState.get<Set<string>>('failureReason')).map((reason) => `- ${reason}`).join('\n')}`);
   }
-  const additionalInfoAfter = [];
+  let additionalInfoAfter = ['Hints'];
+  additionalInfoAfter = additionalInfoAfter.concat(Array.from(globalState.get<Set<string>>('hints')).map((hint) => `- ${hint}`));
   const message = [additionalInfoBefore.join('\n'), tableMd, additionalInfoAfter.join('\n')].join('\n\n');
   console.group('Jest coverage-diff message');
   console.debug(message);

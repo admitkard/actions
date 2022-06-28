@@ -7329,6 +7329,11 @@ exports.DISALLOWED_FILES = [
     '.*\\.lock',
     '\\..*',
     '.*\\.jpg',
+    '.*\\.jpeg',
+    '.*\\.mp4',
+    '.*\\.mp3',
+    '.*\\.css.*',
+    '.*\\.docx',
     '.*\\.png',
     '.*\\.gif',
     '.*\\.svg.*',
@@ -7344,7 +7349,7 @@ exports.DISALLOWED_FILES = [
 //#!/usr/bin/env node
 
 Object.defineProperty(exports, "__esModule", ({ value: true }));
-exports.main = exports.parseErrorMessage = exports.getJestChangedFilesCoverage = void 0;
+exports.main = exports.parseErrorMessage = exports.getFilesWithChangedCoverage = exports.getJestChangedFilesCoverage = void 0;
 const tslib_1 = __webpack_require__(655);
 // tslint:disable: no-console
 const utils_1 = __webpack_require__(5928);
@@ -7458,6 +7463,7 @@ const getFilesWithChangedCoverage = (currentFilesCoverage, baseFilesCoverage) =>
     console.debug({ finalChangedFiles: changedFiles });
     return changedFiles;
 };
+exports.getFilesWithChangedCoverage = getFilesWithChangedCoverage;
 const getMetricCoverageDiff = (currentCoverage, baseCoverage, metricName) => {
     const metricDiff = {
         total: { current: currentCoverage && currentCoverage[metricName].total, base: baseCoverage && baseCoverage[metricName].total },
@@ -7471,8 +7477,8 @@ const mergeJestCoverage = (currentJestCoverage, baseJestCoverage) => {
     const fileCoverage = {};
     console.group('Merging jest coverage');
     console.debug({ currentJestCoverage, baseJestCoverage });
-    const changedFiles = getFilesWithChangedCoverage(currentJestCoverage, baseJestCoverage);
-    changedFiles.forEach((fileName) => {
+    // const changedFiles = getFilesWithChangedCoverage(currentJestCoverage, baseJestCoverage);
+    Object.keys(currentJestCoverage).forEach((fileName) => {
         const currentCoverage = currentJestCoverage[fileName];
         const baseCoverage = baseJestCoverage[fileName];
         fileCoverage[fileName] = {
@@ -7485,6 +7491,22 @@ const mergeJestCoverage = (currentJestCoverage, baseJestCoverage) => {
     console.debug({ fileCoverage });
     console.groupEnd();
     return fileCoverage;
+};
+const getFilesWithChangedCoverageDiff = (jestCoverageDiff) => {
+    const changedFiles = [];
+    Object.keys(jestCoverageDiff).forEach((file) => {
+        const thisFile = jestCoverageDiff[file];
+        let hasDiff = false;
+        ['lines', 'functions', 'statements', 'branches'].forEach((metric) => {
+            if (thisFile[metric].pct.base !== thisFile[metric].pct.current) {
+                hasDiff = true;
+            }
+        });
+        if (hasDiff) {
+            changedFiles.push(file);
+        }
+    });
+    return changedFiles;
 };
 const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
     const table = (0, github_1.createMarkdownTable)({
@@ -7515,7 +7537,7 @@ const convertDiffToMarkdownTable = (transformedGitFiles, jestCoverageDiff) => {
             }
         }
     });
-    const changedCoverageFiles = Object.keys(jestCoverageDiff);
+    const changedCoverageFiles = getFilesWithChangedCoverageDiff(jestCoverageDiff);
     const changedCoverageFilesStatus = changedCoverageFiles.map((fileName) => ({ status: 'U', fileName }));
     const transformedChangedCoverageFiles = transformGitFiles(changedCoverageFilesStatus);
     console.debug({ transformedChangedCoverageFiles });
@@ -7551,9 +7573,10 @@ const coverageMessage = (transformedGitFiles, jestCoverageDiff) => {
     const additionalInfoBefore = [];
     additionalInfoBefore.push(`Status: ${utils_1.globalState.get('passed') ? '🟢 Well Done' : '🔴 Some failures are reported'}`);
     if (utils_1.globalState.get('failureReason')) {
-        additionalInfoBefore.push(`Failure Reasons:\n${utils_1.globalState.get('failureReason').map((reason) => `- ${reason}`).join('\n')}`);
+        additionalInfoBefore.push(`Failure Reasons:\n${Array.from(utils_1.globalState.get('failureReason')).map((reason) => `- ${reason}`).join('\n')}`);
     }
-    const additionalInfoAfter = [];
+    let additionalInfoAfter = ['Hints'];
+    additionalInfoAfter = additionalInfoAfter.concat(Array.from(utils_1.globalState.get('hints')).map((hint) => `- ${hint}`));
     const message = [additionalInfoBefore.join('\n'), tableMd, additionalInfoAfter.join('\n')].join('\n\n');
     console.group('Jest coverage-diff message');
     console.debug(message);
@@ -7626,6 +7649,7 @@ const withTitle = (text, title, htmlEl = 'span') => {
 const getIndicator = (status, minCoverage, data) => {
     var _a, _b, _c;
     const failureReason = utils_1.globalState.get('failureReason');
+    const hints = utils_1.globalState.get('hints');
     let result = {
         indicator: '',
         passed: utils_1.globalState.get('passed'),
@@ -7634,22 +7658,29 @@ const getIndicator = (status, minCoverage, data) => {
     if (status === 'A' && (!data || (data.pct.current < minCoverage))) {
         result.indicator = withTitle('😡 ', 'No test coverage for new file'); // 🚨
         result.passed = false;
-        failureReason.push('No test coverage for new file.');
-        utils_1.globalState.set({ failureReason });
+        failureReason.add('No test coverage for new file.');
+        hints.add('😡 - No test coverage for new file. This should be fixed.');
+        utils_1.globalState.set({ failureReason, hints });
         return result;
     }
     // No Coverage
-    if (!((_a = data === null || data === void 0 ? void 0 : data.pct) === null || _a === void 0 ? void 0 : _a.base) && !((_b = data === null || data === void 0 ? void 0 : data.pct) === null || _b === void 0 ? void 0 : _b.current)) {
+    if (((_a = data === null || data === void 0 ? void 0 : data.pct) === null || _a === void 0 ? void 0 : _a.base) === undefined && ((_b = data === null || data === void 0 ? void 0 : data.pct) === null || _b === void 0 ? void 0 : _b.current) === undefined) {
         result.indicator = withTitle('👻 ', 'No Tests Found');
+        hints.add('👻 - No test found for the file.');
+        utils_1.globalState.set({ hints });
         return result;
     }
     if (!((_c = data === null || data === void 0 ? void 0 : data.pct) === null || _c === void 0 ? void 0 : _c.base)) { // No base coverage
         if (data.pct.current >= minCoverage) { // Current Coverage above threshold
             result.indicator += '💚 ';
+            hints.add('💚 - New tests added, loved it. Coverage is above threshold');
+            utils_1.globalState.set({ hints });
             return result;
         }
         if (data.pct.current < minCoverage) { // Current coverage below threshold
             result.indicator += withTitle('🍋 ', `Current coverage is less than threshold of ${minCoverage}%`);
+            hints.add('🍋 - New tests added, or coverage improved, but Coverage is above threshold. No failure, but needs to improvements');
+            utils_1.globalState.set({ hints });
             return result;
         }
     }
@@ -7657,18 +7688,35 @@ const getIndicator = (status, minCoverage, data) => {
     if (data.pct.current < data.pct.base) {
         result.indicator += withTitle('🔻 ', 'Coverage is reduced');
         result.passed = false;
-        failureReason.push('Coverage is reduced.');
-        utils_1.globalState.set({ failureReason });
+        failureReason.add('Coverage is reduced.');
+        hints.add('🔻 - New tests added, but Coverage is above threshold. No failure, but needs to improvements');
+        utils_1.globalState.set({ hints, failureReason });
         return result;
     }
     // Coverage increased, but still below threshold
     if (data.pct.current >= data.pct.base && data.pct.current < minCoverage) {
         result.indicator = withTitle('🍋 ', `Coverage is less than threshold of ${minCoverage}%`);
+        hints.add('🍋 - New tests added, or coverage improved, but Coverage is above threshold. No failure, but needs to improvements');
+        utils_1.globalState.set({ hints });
         return result;
     }
     // Coverage increased, and above threshold
-    if (data.pct.current >= data.pct.base && data.pct.current >= minCoverage) {
-        result.indicator = '<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Increase.svg/2054px-Increase.svg.png" height="12px" alt="🟩"/> ';
+    if (data.pct.current > data.pct.base && data.pct.current >= minCoverage) {
+        result.indicator = '<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Increase.svg/2054px-Increase.svg.png" height="8px" alt="🟩"/> ';
+        hints.add('<img src="https://upload.wikimedia.org/wikipedia/commons/thumb/1/12/Increase.svg/2054px-Increase.svg.png" height="8px" alt="🟩"/> - Coverage increased, good.');
+        utils_1.globalState.set({ hints });
+    }
+    // Coverage is same, but above threshold
+    if (data.pct.current === data.pct.base && data.pct.current >= minCoverage) {
+        result.indicator = '🟢 ';
+        hints.add('🟢 - Coverage unchanged, and above threshold.');
+        utils_1.globalState.set({ hints });
+    }
+    // Coverage is same, but below threshold
+    if (data.pct.current === data.pct.base && data.pct.current < minCoverage) {
+        result.indicator = '🟠 ';
+        hints.add('🟠 - Coverage unchanged, but below threshold.');
+        utils_1.globalState.set({ hints });
     }
     return result;
 };
@@ -7690,6 +7738,7 @@ const convertCoverageToReportCell = (status, minCoverage, data) => {
     if (!passed) {
         console.debug(`Coverage failure, setting passed as false. [${JSON.stringify(failureReason)}]`);
     }
+    utils_1.globalState.set({ passed });
     return cell;
 };
 exports.convertCoverageToReportCell = convertCoverageToReportCell;
@@ -8250,7 +8299,8 @@ const globalStateFactory = (initialState = {}) => {
 exports.globalStateFactory = globalStateFactory;
 exports.globalState = (0, exports.globalStateFactory)({
     passed: true,
-    failureReason: []
+    failureReason: new Set(),
+    hints: new Set(),
 });
 
 
