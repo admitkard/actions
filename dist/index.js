@@ -7328,6 +7328,10 @@ exports.DISALLOWED_FILES = [
     '.*\\.json',
     '.*\\.lock',
     '\\..*',
+    '.*\\.jpg',
+    '.*\\.png',
+    '.*\\.gif',
+    '.*\\.svg.*',
 ];
 
 
@@ -8009,7 +8013,7 @@ const addCommentOnPR = (message, identifier) => {
         const octokit = github.getOctokit(token);
         const context = github.context;
         const prId = context.payload.pull_request.number;
-        const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n\n' + `\`_${identifier}_\`` }));
+        const newComment = octokit.rest.issues.createComment(Object.assign(Object.assign({}, context.repo), { issue_number: prId, body: message + '\n\n' + `_\`${identifier}\`_` }));
         return newComment;
     }
     return Promise.resolve();
@@ -8036,7 +8040,7 @@ const addOrRenewCommentOnPR = (message, identifier) => tslib_1.__awaiter(void 0,
         const comments = yield octokit.rest.issues.listComments(Object.assign(Object.assign({}, context.repo), { issue_number: prId }));
         const comment = comments.data.find((comment) => comment.body.includes(identifier));
         if (comment) {
-            const newComment = yield octokit.rest.issues.updateComment(Object.assign(Object.assign({}, context.repo), { comment_id: comment.id, body: message + '\n' + `_${identifier}_` }));
+            const newComment = yield octokit.rest.issues.updateComment(Object.assign(Object.assign({}, context.repo), { comment_id: comment.id, body: message + '\n' + `_\`${identifier}\`_` }));
             return newComment;
         }
         else {
